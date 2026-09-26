@@ -19,3 +19,11 @@ it("keeps the marketing and application entry points on their own hosts", async 
     "https://app.example.test/auth/sign-in?next=%2Fdashboard",
   );
 });
+
+it("serves the landing page when a preview uses one host", async () => {
+  process.env.NEXT_PUBLIC_APP_URL = "https://preview.example.test";
+  process.env.NEXT_PUBLIC_MARKETING_URL = "https://preview.example.test";
+
+  const landing = await middleware(new NextRequest("https://preview.example.test/"));
+  expect(landing.headers.get("location")).toBeNull();
+});

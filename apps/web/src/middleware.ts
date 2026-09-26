@@ -10,7 +10,7 @@ export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") ?? request.nextUrl.host;
   const path = request.nextUrl.pathname;
 
-  if (appUrl && host === new URL(appUrl).host && path === "/") {
+  if (appUrl && host === new URL(appUrl).host && host !== (marketingUrl && new URL(marketingUrl).host) && path === "/") {
     return NextResponse.redirect(new URL("/dashboard", appUrl));
   }
   if (
