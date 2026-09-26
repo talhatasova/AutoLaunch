@@ -93,7 +93,6 @@ const res = await fetch(
     method: "POST",
     headers: {
       apikey: SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
       "Content-Type": "application/json",
       // merge-duplicates = upsert on the slug unique constraint.
       Prefer: "resolution=merge-duplicates,return=representation",

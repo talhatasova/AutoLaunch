@@ -1,6 +1,6 @@
 # Railway release checklist
 
-The production gate stays closed until the intended Supabase project is accessible and five free directories have current, consented end-to-end certification records. Existing seed rows are research, including the two form candidates.
+The Supabase schema is migrated and the 23-directory catalog is seeded. The production gate stays closed until five free directories have current, consented end-to-end certification records. Existing seed rows are research, including the two form candidates.
 
 ## Services
 
@@ -16,7 +16,7 @@ Set `NEXT_PUBLIC_MARKETING_URL=https://xxx.com`, `NEXT_PUBLIC_APP_URL=https://ap
 
 `NEXT_PUBLIC_*` values are compiled into the web bundle. Configure them before the Docker build and rebuild when they change. Keep Railway skipped builds disabled for the web service unless runtime configuration replaces these values.
 
-Configure Supabase Auth site URL and redirect allow list for the app host, email links, and Google OAuth. Apply migrations in order, then seed the catalog. Regenerate `packages/shared/src/database.types.ts` from the intended project after migrations; the checked-in types were updated for new enums but the project is not yet reachable to regenerate table columns.
+Configure Supabase Auth site URL and redirect allow list for the app host, email links, and Google OAuth. The migrations and catalog seed have been applied to project `pxdldpzbtrdulyqxaegn`; the checked-in schema types include the new columns and RPCs. Regenerate them with the Supabase type generator when Docker or project-level connector access is available.
 
 ## Release proof
 

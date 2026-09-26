@@ -12,6 +12,9 @@ const APP: AppRow = {
   name: "Pagecrest",
   tagline: "Turn your changelog into a weekly customer email",
   description: "Long description.",
+  category: "startup",
+  contact_email: null,
+  contact_name: null,
   logo_url: null,
   screenshot_url: null,
   status: "launching",
@@ -23,6 +26,8 @@ function submission(overrides: Partial<SubmissionWithDirectory> = {}): Submissio
   return {
     id: "sub-1",
     app_id: "app-1",
+    approved_at: null,
+    approved_payload: null,
     directory_id: "dir-1",
     status: "queued",
     submitted_at: null,
@@ -31,6 +36,9 @@ function submission(overrides: Partial<SubmissionWithDirectory> = {}): Submissio
     attempt_count: 0,
     next_attempt_at: null,
     consent_granted_at: null,
+    live_checked_at: null,
+    obligation_confirmed_at: null,
+    receipt_evidence: null,
     created_at: "2026-08-24T10:00:00Z",
     directories: {
       id: "dir-1",

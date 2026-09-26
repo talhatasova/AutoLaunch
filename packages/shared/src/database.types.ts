@@ -1,7 +1,5 @@
-// GENERATED FILE - DO NOT EDIT BY HAND.
-// Regenerate after any schema change with the Supabase MCP
-// `generate_typescript_types` tool, or:
-//   supabase gen types typescript --project-id pxdldpzbtrdulyqxaegn
+// Schema types synchronized with the checked-in Supabase migrations.
+// Regenerate with `supabase gen types typescript --project-id <project-id>` when available.
 export type Json =
   | string
   | number
@@ -20,6 +18,9 @@ export type Database = {
     Tables: {
       apps: {
         Row: {
+          category: string | null
+          contact_email: string | null
+          contact_name: string | null
           created_at: string
           description: string | null
           id: string
@@ -33,6 +34,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -46,6 +50,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -63,6 +70,9 @@ export type Database = {
       directories: {
         Row: {
           api_config: Json | null
+          automation_check_note: string | null
+          automation_checked_at: string | null
+          automation_verified_at: string | null
           category: string
           created_at: string
           domain_rating: number | null
@@ -71,18 +81,29 @@ export type Database = {
           id: string
           last_verified_at: string | null
           name: string
+          obligation: string | null
+          price_checked_at: string | null
+          price_kind: string
+          price_note: string | null
+          price_source_url: string | null
           requires_captcha: boolean
           requires_consent: boolean
           requires_profile_fields: string[]
+          receipt_verified: boolean
+          rules_permit_automation: boolean
           slug: string
           status: Database["public"]["Enums"]["directory_status"]
           submission_method: Database["public"]["Enums"]["submission_method"]
           submission_url: string
+          terms_url: string | null
           tier: number
           url: string
         }
         Insert: {
           api_config?: Json | null
+          automation_check_note?: string | null
+          automation_checked_at?: string | null
+          automation_verified_at?: string | null
           category: string
           created_at?: string
           domain_rating?: number | null
@@ -91,18 +112,29 @@ export type Database = {
           id?: string
           last_verified_at?: string | null
           name: string
+          obligation?: string | null
+          price_checked_at?: string | null
+          price_kind?: string
+          price_note?: string | null
+          price_source_url?: string | null
           requires_captcha?: boolean
           requires_consent?: boolean
           requires_profile_fields?: string[]
+          receipt_verified?: boolean
+          rules_permit_automation?: boolean
           slug: string
           status?: Database["public"]["Enums"]["directory_status"]
           submission_method: Database["public"]["Enums"]["submission_method"]
           submission_url: string
+          terms_url?: string | null
           tier: number
           url: string
         }
         Update: {
           api_config?: Json | null
+          automation_check_note?: string | null
+          automation_checked_at?: string | null
+          automation_verified_at?: string | null
           category?: string
           created_at?: string
           domain_rating?: number | null
@@ -111,13 +143,21 @@ export type Database = {
           id?: string
           last_verified_at?: string | null
           name?: string
+          obligation?: string | null
+          price_checked_at?: string | null
+          price_kind?: string
+          price_note?: string | null
+          price_source_url?: string | null
           requires_captcha?: boolean
           requires_consent?: boolean
           requires_profile_fields?: string[]
+          receipt_verified?: boolean
+          rules_permit_automation?: boolean
           slug?: string
           status?: Database["public"]["Enums"]["directory_status"]
           submission_method?: Database["public"]["Enums"]["submission_method"]
           submission_url?: string
+          terms_url?: string | null
           tier?: number
           url?: string
         }
@@ -161,39 +201,54 @@ export type Database = {
       submissions: {
         Row: {
           app_id: string
+          approved_at: string | null
+          approved_payload: Json | null
           attempt_count: number
           consent_granted_at: string | null
           created_at: string
           directory_id: string
           error_message: string | null
           id: string
+          live_checked_at: string | null
           next_attempt_at: string | null
+          obligation_confirmed_at: string | null
+          receipt_evidence: Json | null
           result_url: string | null
           status: Database["public"]["Enums"]["submission_status"]
           submitted_at: string | null
         }
         Insert: {
           app_id: string
+          approved_at?: string | null
+          approved_payload?: Json | null
           attempt_count?: number
           consent_granted_at?: string | null
           created_at?: string
           directory_id: string
           error_message?: string | null
           id?: string
+          live_checked_at?: string | null
           next_attempt_at?: string | null
+          obligation_confirmed_at?: string | null
+          receipt_evidence?: Json | null
           result_url?: string | null
           status?: Database["public"]["Enums"]["submission_status"]
           submitted_at?: string | null
         }
         Update: {
           app_id?: string
+          approved_at?: string | null
+          approved_payload?: Json | null
           attempt_count?: number
           consent_granted_at?: string | null
           created_at?: string
           directory_id?: string
           error_message?: string | null
           id?: string
+          live_checked_at?: string | null
           next_attempt_at?: string | null
+          obligation_confirmed_at?: string | null
+          receipt_evidence?: Json | null
           result_url?: string | null
           status?: Database["public"]["Enums"]["submission_status"]
           submitted_at?: string | null
@@ -215,12 +270,62 @@ export type Database = {
           },
         ]
       }
+      submission_jobs: {
+        Row: {
+          available_at: string
+          claimed_at: string | null
+          created_at: string
+          finished_at: string | null
+          id: string
+          submission_id: string
+        }
+        Insert: {
+          available_at?: string
+          claimed_at?: string | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          submission_id: string
+        }
+        Update: {
+          available_at?: string
+          claimed_at?: string | null
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submission_jobs_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: true
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      approve_targets: {
+        Args: { p_app_id: string; p_targets: Json; p_reviewed_contact_email: string }
+        Returns: Database["public"]["Tables"]["submissions"]["Row"][]
+      }
+      claim_submission_job: {
+        Args: Record<PropertyKey, never>
+        Returns: { job_id: string; submission_id: string; app_id: string; directory_id: string }[]
+      }
+      confirm_live_listing: {
+        Args: { p_submission_id: string; p_owner_id: string; p_url: string; p_checked_at: string }
+        Returns: Database["public"]["Tables"]["submissions"]["Row"]
+      }
+      retry_failed_submission: {
+        Args: { p_submission_id: string }
+        Returns: Database["public"]["Tables"]["submissions"]["Row"]
+      }
     }
     Enums: {
       app_status: "draft" | "ready" | "launching" | "done" | "submitted"
