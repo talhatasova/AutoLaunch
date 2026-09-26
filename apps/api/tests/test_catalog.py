@@ -9,7 +9,7 @@ def test_directory_needs_current_complete_certification():
         "id": "8e144781-a985-4e1d-aa90-1180202cc7f2",
         "slug": "example", "name": "Example", "url": "https://example.test",
         "category": "startup", "price_kind": "free", "price_note": None,
-        "price_source_url": None, "price_checked_at": None,
+        "price_source_url": None, "price_checked_at": now.isoformat(),
         "obligation": None, "terms_url": None, "tier": 2,
         "requires_captcha": False, "status": "active", "receipt_verified": True,
         "rules_permit_automation": True, "requires_consent": False,

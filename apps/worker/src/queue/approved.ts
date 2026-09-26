@@ -5,17 +5,20 @@ export type CertifiedTarget = {
   tier: number;
   price_kind: string;
   requires_captcha: boolean;
+  requires_profile_fields: string[];
   receipt_verified: boolean;
   rules_permit_automation: boolean;
   automation_verified_at: string | null;
+  price_checked_at: string | null;
   last_verified_at: string | null;
 };
 
 export function targetStillEligible(target: CertifiedTarget, now = Date.now()): boolean {
   const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
   return target.status === "active" && target.tier === 2 && target.price_kind === "free" &&
-    !target.requires_captcha && target.receipt_verified && target.rules_permit_automation &&
+    !target.requires_captcha && target.requires_profile_fields.length === 0 && target.receipt_verified && target.rules_permit_automation &&
     target.automation_verified_at !== null &&
+    target.price_checked_at !== null && Date.parse(target.price_checked_at) >= sevenDaysAgo &&
     target.last_verified_at !== null && Date.parse(target.last_verified_at) >= sevenDaysAgo;
 }
 

@@ -31,5 +31,6 @@ def test_analytics_counts_receipts_separately_from_live(monkeypatch):
             assert response.json()["counts"]["pending_review"] == 1
             assert response.json()["counts"]["live"] == 1
             assert response.json()["by_directory"][0]["total"] == 2
+            assert response.json()["by_product"][0]["live"] == 1
     finally:
         app.dependency_overrides.clear()

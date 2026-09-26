@@ -22,6 +22,8 @@ export async function POST(request: NextRequest) {
       tagline: result.tagline ?? "",
       description: result.metadata.description ?? "",
       contact_name: fullName ?? "",
+      logo_url: result.metadata.favicon_url,
+      screenshot_url: result.metadata.image_url,
       notes: result.notes,
     });
   } catch (error) {

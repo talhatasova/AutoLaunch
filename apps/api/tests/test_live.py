@@ -32,12 +32,11 @@ def test_founder_evidence_needs_public_verification_before_live(monkeypatch):
             return httpx.Response(200, json={
                 "url": "https://directory.example.test/product", "checked_at": "2026-09-26T00:00:00Z"
             })
-        if request.url.path == "/rest/v1/submissions" and request.method == "PATCH":
+        if request.url.path == "/rest/v1/rpc/confirm_live_listing":
             assert request.headers["authorization"] == "Bearer service-key"
+            assert __import__("json").loads(request.content)["p_owner_id"] == submission_id
             writes.append(request.content)
-            return httpx.Response(200, json=[{"id": submission_id}])
-        if request.url.path == "/rest/v1/submission_events":
-            return httpx.Response(201)
+            return httpx.Response(200, json={"id": submission_id})
         raise AssertionError(request.url)
 
     async def fake_client():

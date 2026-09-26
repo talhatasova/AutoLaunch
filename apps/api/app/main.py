@@ -39,10 +39,14 @@ class ProductInput(BaseModel):
     description: str = Field(min_length=1, max_length=5000)
     category: str = Field(min_length=1, max_length=100)
     contact_name: str = Field(min_length=1, max_length=120)
+    logo_url: str | None = Field(default=None, max_length=2048)
+    screenshot_url: str | None = Field(default=None, max_length=2048)
 
-    @field_validator("url")
+    @field_validator("url", "logo_url", "screenshot_url")
     @classmethod
-    def public_url(cls, value: str) -> str:
+    def public_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         parsed = urlsplit(value)
         if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
             raise ValueError("Enter a public http or https URL")
@@ -85,6 +89,7 @@ class Directory(BaseModel):
     requires_consent: bool
     tier: int
     requires_captcha: bool
+    requires_profile_fields: list[str] = []
     status: str
     fields_sent: list[str] = []
     eligible: bool = False
@@ -96,10 +101,13 @@ class Directory(BaseModel):
             and self.status == "active"
             and self.tier == 2
             and not self.requires_captcha
+            and not self.requires_profile_fields
             and self.receipt_verified
             and self.rules_permit_automation
             and (not self.requires_consent or self.terms_url is not None)
             and self.automation_verified_at is not None
+            and self.price_checked_at is not None
+            and self.price_checked_at >= current
             and self.last_verified_at is not None
             and self.last_verified_at >= current
         )
@@ -181,7 +189,7 @@ async def list_products(
     response = await products_request(
         client, founder, "GET", "apps",
         params={
-            "select": "id,url,name,tagline,description,category,contact_name,contact_email,status,created_at",
+            "select": "id,url,name,tagline,description,category,contact_name,contact_email,logo_url,screenshot_url,status,created_at",
             "order": "created_at.desc",
             "limit": "2",
         },
@@ -242,7 +250,7 @@ async def list_directories(
     response = await products_request(
         client, founder, "GET", "directories",
         params={
-            "select": "id,slug,name,url,category,price_kind,price_note,price_source_url,price_checked_at,obligation,terms_url,last_verified_at,automation_verified_at,receipt_verified,rules_permit_automation,requires_consent,tier,requires_captcha,status,form_schema,api_config",
+            "select": "id,slug,name,url,category,price_kind,price_note,price_source_url,price_checked_at,obligation,terms_url,last_verified_at,automation_verified_at,receipt_verified,rules_permit_automation,requires_consent,requires_profile_fields,tier,requires_captcha,status,form_schema,api_config",
             "order": "name.asc",
         },
     )
@@ -267,6 +275,7 @@ class ApprovalTarget(BaseModel):
 
 class Approval(BaseModel):
     targets: list[ApprovalTarget] = Field(min_length=1, max_length=2)
+    reviewed_contact_email: str = Field(min_length=3, max_length=320)
 
 
 @app.post("/api/v1/products/{product_id}/submissions", status_code=201)
@@ -281,6 +290,7 @@ async def approve_submissions(
         json={
             "p_app_id": str(product_id),
             "p_targets": [target.model_dump(mode="json") for target in body.targets],
+            "p_reviewed_contact_email": body.reviewed_contact_email,
         },
     )
     if response.status_code == 400:
@@ -303,7 +313,7 @@ async def product_submissions(
     response = await products_request(
         client, founder, "GET", "submissions",
         params={
-            "select": "id,directory_id,status,submitted_at,result_url,error_message,created_at,directories(name,url)",
+            "select": "id,directory_id,status,submitted_at,result_url,error_message,receipt_evidence,created_at,directories(name,url),submission_events(kind,message,created_at)",
             "app_id": f"eq.{product_id}",
             "order": "created_at.desc",
         },
@@ -386,31 +396,23 @@ async def verify_live(
         raise HTTPException(422, "Could not verify that this directory has a public listing for the product")
     evidence = checked.json()
     try:
-        updated = await client.patch(
-            f"{supabase_url.rstrip('/')}/rest/v1/submissions",
+        updated = await client.post(
+            f"{supabase_url.rstrip('/')}/rest/v1/rpc/confirm_live_listing",
             headers={
                 "apikey": service_key,
                 "Authorization": f"Bearer {service_key}",
-                "Prefer": "return=representation",
             },
-            params={"id": f"eq.{submission_id}", "status": "in.(pending_review,unconfirmed)"},
-            json={"status": "live", "result_url": evidence["url"], "live_checked_at": evidence["checked_at"]},
+            json={
+                "p_submission_id": str(submission_id), "p_owner_id": str(founder.id),
+                "p_url": evidence["url"], "p_checked_at": evidence["checked_at"],
+            },
         )
     except httpx.RequestError:
         raise HTTPException(503, "Could not save live listing") from None
+    if updated.status_code == 400:
+        raise HTTPException(409, "Submission changed while verifying")
     if updated.status_code != 200:
         raise HTTPException(503, "Could not save live listing")
-    if not updated.json():
-        raise HTTPException(409, "Submission changed while verifying")
-    await client.post(
-        f"{supabase_url.rstrip('/')}/rest/v1/submission_events",
-        headers={"apikey": service_key, "Authorization": f"Bearer {service_key}"},
-        json={
-            "submission_id": str(submission_id), "kind": "live",
-            "message": "Public listing URL checked and confirmed.",
-            "payload": {"url": evidence["url"]},
-        },
-    )
     return {"status": "live", **evidence}
 
 
@@ -429,6 +431,7 @@ async def analytics(
     statuses = ("queued", "running", "pending_review", "unconfirmed", "live", "failed")
     counts = {status: sum(row["status"] == status for row in rows) for status in statuses}
     by_directory: dict[str, dict] = {}
+    by_product: dict[str, dict] = {}
     for row in rows:
         item = by_directory.setdefault(row["directory_id"], {
             "directory_id": row["directory_id"],
@@ -438,7 +441,15 @@ async def analytics(
         item["total"] += 1
         if row["status"] in item:
             item[row["status"]] += 1
+        product_item = by_product.setdefault(row["app_id"], {
+            "product_id": row["app_id"], "total": 0,
+            "live": 0, "pending_review": 0, "unconfirmed": 0, "failed": 0,
+        })
+        product_item["total"] += 1
+        if row["status"] in product_item:
+            product_item[row["status"]] += 1
     return {
         "total": len(rows), "counts": counts,
         "by_directory": sorted(by_directory.values(), key=lambda item: item["name"]),
+        "by_product": list(by_product.values()),
     }

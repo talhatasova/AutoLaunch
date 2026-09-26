@@ -49,7 +49,9 @@ revoke delete on public.apps from authenticated;
 drop policy if exists "users delete their own apps" on public.apps;
 
 -- The one atomic approval boundary: selects, checks, snapshots, and queues.
-create or replace function public.approve_targets(p_app_id uuid, p_targets jsonb)
+create or replace function public.approve_targets(
+  p_app_id uuid, p_targets jsonb, p_reviewed_contact_email text
+)
 returns setof public.submissions
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -62,7 +64,10 @@ declare
   now_utc timestamptz := now();
 begin
   if auth.uid() is null then raise exception 'Sign in first'; end if;
-  if jsonb_typeof(p_targets) <> 'array' or jsonb_array_length(p_targets) not between 1 and 2 then
+  if jsonb_typeof(p_targets) is distinct from 'array' then
+    raise exception 'Select one or two directories';
+  end if;
+  if jsonb_array_length(p_targets) not between 1 and 2 then
     raise exception 'Select one or two directories';
   end if;
   select * into product from public.apps
@@ -79,14 +84,20 @@ begin
   end if;
   select email into founder_email from auth.users where id = auth.uid();
   if founder_email is null then raise exception 'A verified email is required'; end if;
+  if founder_email is distinct from p_reviewed_contact_email then
+    raise exception 'Contact email changed; refresh and review before approving';
+  end if;
 
   for target in select value from jsonb_array_elements(p_targets) loop
     target_id := (target->>'directory_id')::uuid;
     select * into directory from public.directories where id = target_id;
     if not found or directory.status <> 'active' or directory.tier <> 2
        or directory.requires_captcha or directory.price_kind <> 'free'
+       or cardinality(directory.requires_profile_fields) > 0
        or not directory.receipt_verified or not directory.rules_permit_automation
        or directory.automation_verified_at is null
+       or directory.price_checked_at is null
+       or directory.price_checked_at < now_utc - interval '7 days'
        or directory.last_verified_at is null
        or directory.last_verified_at < now_utc - interval '7 days' then
       raise exception 'Directory is not currently eligible';
@@ -125,8 +136,8 @@ begin
   update public.apps set status = 'submitted' where id = p_app_id;
 end;
 $$;
-revoke all on function public.approve_targets(uuid, jsonb) from public, anon;
-grant execute on function public.approve_targets(uuid, jsonb) to authenticated;
+revoke all on function public.approve_targets(uuid, jsonb, text) from public, anon;
+grant execute on function public.approve_targets(uuid, jsonb, text) to authenticated;
 
 create or replace function public.claim_submission_job()
 returns table(job_id uuid, submission_id uuid, app_id uuid, directory_id uuid)
@@ -170,8 +181,10 @@ begin
   end if;
   select * into directory from public.directories where id = submission.directory_id;
   if directory.status <> 'active' or directory.tier <> 2 or directory.price_kind <> 'free'
-     or directory.requires_captcha or not directory.receipt_verified
+     or directory.requires_captcha or cardinality(directory.requires_profile_fields) > 0
+     or not directory.receipt_verified
      or not directory.rules_permit_automation or directory.automation_verified_at is null
+     or directory.price_checked_at is null or directory.price_checked_at < now() - interval '7 days'
      or directory.last_verified_at is null or directory.last_verified_at < now() - interval '7 days' then
     raise exception 'Directory needs re-verification before retry';
   end if;
@@ -186,3 +199,36 @@ end;
 $$;
 revoke all on function public.retry_failed_submission(uuid) from public, anon;
 grant execute on function public.retry_failed_submission(uuid) to authenticated;
+
+-- The checked public URL and live timeline event commit together.
+create function public.confirm_live_listing(
+  p_submission_id uuid, p_owner_id uuid, p_url text, p_checked_at timestamptz
+)
+returns public.submissions
+language plpgsql security definer set search_path = '' as $$
+declare
+  submission public.submissions%rowtype;
+begin
+  if auth.role() <> 'service_role' then raise exception 'Verifier only'; end if;
+  if p_url is null or p_checked_at is null or p_url !~* '^https?://'
+     or p_checked_at < now() - interval '5 minutes'
+     or p_checked_at > now() + interval '1 minute' then
+    raise exception 'Invalid listing evidence';
+  end if;
+  update public.submissions s set
+    status = 'live', result_url = p_url, live_checked_at = p_checked_at
+  from public.apps a
+  where s.id = p_submission_id and a.id = s.app_id and a.user_id = p_owner_id
+    and s.status in ('pending_review', 'unconfirmed')
+  returning s.* into submission;
+  if not found then raise exception 'Submission changed while verifying'; end if;
+  insert into public.submission_events(submission_id, kind, message, payload)
+    values (p_submission_id, 'live', 'Public listing URL checked and confirmed.',
+            jsonb_build_object('url', p_url));
+  return submission;
+end;
+$$;
+revoke all on function public.confirm_live_listing(uuid, uuid, text, timestamptz)
+  from public, anon, authenticated;
+grant execute on function public.confirm_live_listing(uuid, uuid, text, timestamptz)
+  to service_role;

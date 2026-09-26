@@ -41,7 +41,13 @@ export default async function DashboardPage() {
           </div>
         ))}
       </div>
-      <ProductWorkbench initialProducts={products} directories={directories} />
+      <ProductWorkbench initialProducts={products} directories={directories} contactEmail={userData.user.email ?? ""} />
+      <section aria-label="Outcomes by directory" className="mt-16 edge-heavy-t pt-5">
+        <h2 className="t-meta fg-heading">Outcomes by directory</h2>
+        {analytics.by_directory.length === 0 ? <p className="fg-muted mt-4">No submissions yet.</p> : analytics.by_directory.map((item: { directory_id: string; name: string; total: number; live: number; pending_review: number; unconfirmed: number; failed: number }) => (
+          <p key={item.directory_id} className="fg-body edge-t mt-4 py-3">{item.name}: {item.total} submitted · {item.pending_review} in review · {item.live} live · {item.unconfirmed} unconfirmed · {item.failed} failed</p>
+        ))}
+      </section>
       <DirectoryCatalog directories={directories} />
     </main>
   );

@@ -23,11 +23,13 @@ type Product = {
   category: string;
   contact_name: string;
   contact_email: string;
+  logo_url: string | null;
+  screenshot_url: string | null;
 };
 
-type Submission = { id: string; directory_id: string; status: string; result_url: string | null; directories?: { name: string } };
+type Submission = { id: string; directory_id: string; status: string; result_url: string | null; error_message?: string | null; receipt_evidence?: { observed_url?: string | null } | null; submission_events?: { kind: string; message: string; created_at: string }[]; directories?: { name: string } };
 
-export function SubmissionSelector({ product, directories, onApproved }: { product: Product; directories: SelectableDirectory[]; onApproved: () => void }) {
+export function SubmissionSelector({ product, directories, contactEmail, onApproved }: { product: Product; directories: SelectableDirectory[]; contactEmail: string; onApproved: () => void }) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [consents, setConsents] = useState<string[]>([]);
@@ -55,7 +57,8 @@ export function SubmissionSelector({ product, directories, onApproved }: { produ
       }
     }
     void load();
-    return () => { active = false; };
+    const timer = setInterval(() => { void load(); }, 10_000);
+    return () => { active = false; clearInterval(timer); };
   }, [product.id]);
 
   const remaining = Math.max(0, 2 - submissions.length);
@@ -75,7 +78,7 @@ export function SubmissionSelector({ product, directories, onApproved }: { produ
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/products/${product.id}/submissions`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.session.access_token}` },
-        body: JSON.stringify({ targets: chosen.map((directory) => ({
+        body: JSON.stringify({ reviewed_contact_email: contactEmail, targets: chosen.map((directory) => ({
           directory_id: directory.id,
           consent: consents.includes(directory.id),
           obligation_confirmed: confirmations.includes(directory.id),
@@ -144,13 +147,25 @@ export function SubmissionSelector({ product, directories, onApproved }: { produ
 
   return (
     <div className="mt-6 edge-t pt-5">
-      <p className="t-micro fg-heading">Directory submissions · {submissions.length} / 2</p>
+      <p className="t-micro fg-heading">Directory submissions · {submissions.length} / 2 · {submissions.filter((item) => item.status === "live").length} live · {submissions.filter((item) => item.status === "pending_review").length} in review</p>
       {submissions.map((submission) => (
         <div key={submission.id} className="fg-body mt-3">
           <p>{submission.directories?.name ?? directories.find((directory) => directory.id === submission.directory_id)?.name ?? "Directory"}: {submission.status.replaceAll("_", " ")}
             {submission.result_url && <> · <a href={submission.result_url} target="_blank" rel="noopener noreferrer" className="underline">Listing ↗</a></>}
             {submission.status === "failed" && <> · <button type="button" disabled={busy} onClick={() => void retry(submission.id)} className="fg-accent underline disabled:opacity-50">Retry after review</button></>}
           </p>
+          {submission.error_message && <p className="fg-muted mt-1">{submission.error_message}</p>}
+          {submission.receipt_evidence && <p className="fg-muted mt-1">Receipt observed; publication is awaiting confirmation.</p>}
+          {(submission.submission_events ?? []).length > 0 && (
+            <details className="mt-2">
+              <summary className="t-micro fg-accent cursor-pointer">View progress and evidence</summary>
+              <ol className="mt-2 space-y-1 text-sm">
+                {[...submission.submission_events ?? []].sort((a, b) => a.created_at.localeCompare(b.created_at)).map((entry, index) => (
+                  <li key={`${entry.created_at}-${index}`}>{new Date(entry.created_at).toLocaleString()}: {entry.message}</li>
+                ))}
+              </ol>
+            </details>
+          )}
           {(submission.status === "pending_review" || submission.status === "unconfirmed") && (
             <form onSubmit={(event) => { event.preventDefault(); void verifyLive(submission.id); }} className="mt-3 flex flex-wrap gap-2">
               <label htmlFor={`listing-${submission.id}`} className="sr-only">Public listing URL</label>
@@ -178,7 +193,8 @@ export function SubmissionSelector({ product, directories, onApproved }: { produ
                 <div>Name: {product.name}</div><div>Website: {product.url}</div>
                 <div>Short description: {product.tagline || "Not provided"}</div>
                 <div>Description: {product.description}</div><div>Category: {product.category}</div>
-                <div>Contact name: {product.contact_name}</div><div>Contact email: {product.contact_email}</div>
+                <div>Contact name: {product.contact_name}</div><div>Contact email: {contactEmail}</div>
+                <div>Logo URL: {product.logo_url ?? "Not provided"}</div><div>Product image URL: {product.screenshot_url ?? "Not provided"}</div>
               </dl>
               {chosen.map((directory) => (
                 <div key={directory.id} className="edge-t mt-5 pt-4">

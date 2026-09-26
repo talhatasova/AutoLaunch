@@ -15,13 +15,15 @@ type Product = {
   category: string;
   contact_name: string;
   contact_email: string;
+  logo_url: string | null;
+  screenshot_url: string | null;
   status: string;
   created_at: string;
 };
 
 type Draft = Omit<Product, "id" | "created_at" | "contact_email" | "status">;
 
-export function ProductWorkbench({ initialProducts, directories }: { initialProducts: Product[]; directories: SelectableDirectory[] }) {
+export function ProductWorkbench({ initialProducts, directories, contactEmail }: { initialProducts: Product[]; directories: SelectableDirectory[]; contactEmail: string }) {
   const [products, setProducts] = useState(initialProducts);
   const [url, setUrl] = useState("");
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -48,6 +50,8 @@ export function ProductWorkbench({ initialProducts, directories }: { initialProd
         description: data.description,
         category: "",
         contact_name: data.contact_name,
+        logo_url: data.logo_url,
+        screenshot_url: data.screenshot_url,
       });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not prepare this product.");
@@ -70,7 +74,7 @@ export function ProductWorkbench({ initialProducts, directories }: { initialProd
           "Content-Type": "application/json",
           Authorization: `Bearer ${data.session.access_token}`,
         },
-        body: JSON.stringify(draft),
+        body: JSON.stringify({ ...draft, logo_url: draft.logo_url || null, screenshot_url: draft.screenshot_url || null }),
       });
       if (response.status === 409) throw new Error(editingId ? "Sent product details cannot change. Edit the live listing at the directory." : "The free beta allows two products per founder.");
       if (!response.ok) throw new Error("Could not save the product. Check every field and try again.");
@@ -103,9 +107,9 @@ export function ProductWorkbench({ initialProducts, directories }: { initialProd
             <p className="fg-body mt-3">{product.description}</p>
             {product.status === "ready" && <button type="button" className="t-micro fg-accent mt-4 underline" onClick={() => {
               setEditingId(product.id);
-              setDraft({ url: product.url, name: product.name, tagline: product.tagline, description: product.description, category: product.category, contact_name: product.contact_name });
+              setDraft({ url: product.url, name: product.name, tagline: product.tagline, description: product.description, category: product.category, contact_name: product.contact_name, logo_url: product.logo_url, screenshot_url: product.screenshot_url });
             }}>Edit before sending</button>}
-            <SubmissionSelector product={product} directories={directories} onApproved={() => setProducts((current) => current.map((item) => item.id === product.id ? { ...item, status: "submitted" } : item))} />
+            <SubmissionSelector product={product} directories={directories} contactEmail={contactEmail} onApproved={() => setProducts((current) => current.map((item) => item.id === product.id ? { ...item, status: "submitted" } : item))} />
           </article>
         ))}
       </section>
@@ -140,7 +144,14 @@ export function ProductWorkbench({ initialProducts, directories }: { initialProd
                 )}
               </div>
             ))}
+            {([['logo_url', 'Logo URL'], ['screenshot_url', 'Product image URL']] as const).map(([key, label]) => (
+              <div key={key}>
+                <label htmlFor={key} className="t-micro fg-muted block">{label} (optional)</label>
+                <Input id={key} className="mt-2" type="url" maxLength={2048} value={draft[key] ?? ""} onChange={(event) => setDraft({ ...draft, [key]: event.target.value })} />
+              </div>
+            ))}
             <p className="t-micro fg-muted">Website: {draft.url}</p>
+            <p className="t-micro fg-muted">Contact email from your verified account: {contactEmail}</p>
             <div className="flex flex-wrap gap-3">
               <Button type="submit" variant="signal" disabled={busy}>{busy ? "Saving…" : editingId ? "Save changes" : "Save product"}</Button>
               <Button type="button" variant="outline" onClick={() => { setDraft(null); setEditingId(null); }} disabled={busy}>Cancel</Button>
