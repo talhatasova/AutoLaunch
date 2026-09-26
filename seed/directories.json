@@ -1,0 +1,576 @@
+[
+  {
+    "slug": "the-startup-project",
+    "name": "The Startup Project",
+    "url": "https://startupproject.org",
+    "submission_url": "https://startupproject.org/submit-startup/",
+    "tier": 2,
+    "submission_method": "form",
+    "requires_captcha": false,
+    "category": "startup",
+    "domain_rating": null,
+    "form_schema": {
+      "fields": [
+        {
+          "selector": "#companyName",
+          "payload_key": "name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "selector": "#tagline",
+          "payload_key": "tagline",
+          "type": "text",
+          "required": true
+        },
+        {
+          "selector": "#website",
+          "payload_key": "url",
+          "type": "url",
+          "required": true
+        },
+        {
+          "selector": "#description",
+          "payload_key": "description",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "selector": "#industry",
+          "payload_key": "category",
+          "type": "select",
+          "required": true
+        },
+        {
+          "selector": "#email",
+          "payload_key": "contact_email",
+          "type": "email",
+          "required": true
+        }
+      ],
+      "submit_selector": "form button[type=\"submit\"]",
+      "success_signal": {
+        "kind": "text_present",
+        "value": "Your startup has been submitted!"
+      },
+      "extra_fields": [
+        {
+          "selector": "#founderName",
+          "type": "text",
+          "source": "founder_name",
+          "required": true
+        },
+        {
+          "selector": "#consent",
+          "type": "checkbox",
+          "source": "consent",
+          "required": true
+        }
+      ],
+      "honeypots": [
+        "input[name=\"fax_number\"]"
+      ]
+    },
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://startupproject.org/submit-startup/",
+      "checked_at": "2026-08-24T12:40:00Z",
+      "finding": "200 OK on fresh unauthenticated GET. Verified in a real Chrome page, not just raw HTML: scanning the live DOM for recaptcha/hcaptcha/turnstile/grecaptcha/challenges.cloudflare returned ZERO matches, and there are no iframes. No Cloudflare interstitial, no login wall. Single Next.js form, 13 controls, stable ids (#founderName #email #companyName #website #tagline #industry #stage #mrrRange #teamSize #description #traction #consent). Submits JSON via fetch POST to /api/submit-startup. Success string read directly out of chunk 0apch4zqlywp9.js: \"Your startup has been submitted! We'll review it and notify you once your listing is live.\" Page states \"Free listing\". CAVEAT 1: the form contains a honeypot input named fax_number - the driver MUST leave it empty. CAVEAT 2: two required controls have no SubmissionPayload equivalent and are therefore absent from the field map - #founderName (text) and #consent (checkbox); the generic driver needs to supply a founder name and tick consent outside the payload map or the client-side validation will block submit. Listing is editorially reviewed before going live, but the submission itself is fully programmatic, which is why this is Tier 2 and not Tier 3."
+    },
+    "status": "active",
+    "requires_consent": true
+  },
+  {
+    "slug": "startup-collections",
+    "name": "Startup Collections",
+    "url": "https://startupcollections.com",
+    "submission_url": "https://startupcollections.com/submit/",
+    "tier": 2,
+    "submission_method": "form",
+    "requires_captcha": false,
+    "category": "startup",
+    "domain_rating": null,
+    "form_schema": {
+      "fields": [
+        {
+          "selector": "form.loader input[name=\"name\"]",
+          "payload_key": "name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "selector": "form.loader select[name=\"collection\"]",
+          "payload_key": "category",
+          "type": "select",
+          "required": true
+        },
+        {
+          "selector": "form.loader input[name=\"website\"]",
+          "payload_key": "url",
+          "type": "url",
+          "required": true
+        },
+        {
+          "selector": "form.loader input[name=\"content\"]",
+          "payload_key": "description",
+          "type": "text",
+          "required": false
+        },
+        {
+          "selector": "form.loader input[name=\"submitter_email\"]",
+          "payload_key": "contact_email",
+          "type": "email",
+          "required": true
+        }
+      ],
+      "submit_selector": "form.loader button[type=\"submit\"]",
+      "success_signal": {
+        "kind": "text_present",
+        "value": "Thank you"
+      },
+      "extra_fields": [
+        {
+          "selector": "form.loader input[name=\"submitter_name\"]",
+          "type": "text",
+          "source": "founder_name",
+          "required": true
+        }
+      ],
+      "honeypots": []
+    },
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://startupcollections.com/submit/",
+      "checked_at": "2026-08-24T12:50:00Z",
+      "finding": "200 OK on fresh unauthenticated GET. Verified in a real Chrome page: live-DOM scan for recaptcha/hcaptcha/turnstile/grecaptcha/challenges.cloudflare returned ZERO matches. No Cloudflare interstitial, no login wall, no fee mentioned. Real submission form present (class \"form loader\", action=\"#\", jQuery AJAX) with 6 name-addressable controls: name, collection (select), website, content, submitter_name, submitter_email. The other two forms on the page are a Mailchimp newsletter subscribe and a site search. CAVEAT 1: required control submitter_name has no SubmissionPayload equivalent and is omitted from the field map - the driver must supply it separately. CAVEAT 2: success_signal is UNVERIFIED. I did not submit data, and grepping the site's own JS bundles (9e780.js, 55e9c.js, bfc8d.js) surfaced no success-message string - only jQuery/validator internals. The \"Thank you\" text_present value is provisional and MUST be confirmed on the first live run. Low-traffic site; value is a free dofollow listing, not volume."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "product-hunt",
+    "name": "Product Hunt",
+    "url": "https://www.producthunt.com",
+    "submission_url": "https://www.producthunt.com/posts/new",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": true,
+    "category": "startup",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://www.producthunt.com/posts/new",
+      "checked_at": "2026-08-24T12:19:00Z",
+      "finding": "Tier 3 on two independent grounds. (1) Fresh unauthenticated GET returns HTTP 403, Server: cloudflare, cf-ray present, 5650-byte body titled \"Just a moment...\" containing challenge-platform, cf_chl and \"Enable JavaScript and cookies\" - a full Cloudflare JS interstitial. Same 403 interstitial on /, /products/new, /launch and even /robots.txt. (2) The public API v2 is READ-ONLY for listing creation: api.producthunt.com/v2/docs states \"By default all apps are read-only\", and the live mutation reference at api-v2-docs.producthunt.com/operation/mutation/ documents exactly TWO mutations - userFollow and userFollowUndo. There is no createPost/createProduct write endpoint. This is the calibration case: the most obvious \"free directory\" is not Tier 1."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "alternativeto",
+    "name": "AlternativeTo",
+    "url": "https://alternativeto.net",
+    "submission_url": "https://alternativeto.net/manage/app/new/",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": true,
+    "category": "software",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://alternativeto.net/manage/app/new/",
+      "checked_at": "2026-08-24T12:19:00Z",
+      "finding": "Fresh unauthenticated GET returns HTTP 403, Server: cloudflare, 5645-byte body titled \"Just a moment...\" with challenge-platform and cf_chl markers - Cloudflare JS interstitial. /software/new/ returns the identical 403 interstitial. No submission form is reachable unauthenticated; the /manage/ path additionally implies an account. Not automatable."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "saashub",
+    "name": "SaaSHub",
+    "url": "https://www.saashub.com",
+    "submission_url": "https://www.saashub.com/services/submit",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": false,
+    "category": "saas",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://www.saashub.com/services/submit",
+      "checked_at": "2026-08-24T12:30:00Z",
+      "finding": "200 OK and no CAPTCHA, but not automatable end-to-end. /services/new redirects to /services/submit, which is only a single-field URL gate (input[name=url] + Continue). Following it through with a test URL lands on /verify/<slug>, a page whose only form asks for an email and submits \"Send me verification link\" - i.e. the flow terminates in an out-of-band email confirmation click before anything is listed. The page also surfaces Register/Account/log-in copy. /login itself returns HTTP 403 behind a Cloudflare \"Just a moment...\" interstitial. Email-verification gate = Tier 3 by the login-wall rule."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "indie-hackers",
+    "name": "Indie Hackers",
+    "url": "https://www.indiehackers.com",
+    "submission_url": "https://www.indiehackers.com/products/new",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": false,
+    "category": "startup",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://www.indiehackers.com/products/new",
+      "checked_at": "2026-08-24T12:19:00Z",
+      "finding": "200 OK but the 21899-byte response is an Ember.js SPA boot shell - zero <form>, zero <input>, zero <textarea> in the delivered HTML; the meta config block identifies modulePrefix \"indie-hackers\". Product creation is behind an authenticated client-side route (/product/new returns the same byte-identical shell). No CAPTCHA observed, but a pre-existing logged-in account is mandatory, which is Tier 3 by definition."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "theres-an-ai-for-that",
+    "name": "There's An AI For That",
+    "url": "https://theresanaiforthat.com",
+    "submission_url": "https://theresanaiforthat.com/submit/",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": true,
+    "category": "ai",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://theresanaiforthat.com/submit/",
+      "checked_at": "2026-08-24T12:19:00Z",
+      "finding": "Fresh unauthenticated GET returns HTTP 403, Server: cloudflare, 5604-byte body titled \"Just a moment...\" with challenge-platform, cf_chl and \"Enable JavaScript and cookies\" - Cloudflare JS interstitial. Separately, robots.txt (which does return 200) explicitly Disallows /api/ and /verify/ for all user-agents and blanket-bans AhrefsBot, SemrushBot and several audit crawlers, signalling active hostility to automated access. Not automatable."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "betalist",
+    "name": "BetaList",
+    "url": "https://betalist.com",
+    "submission_url": "https://betalist.com/submit",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": false,
+    "category": "startup",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://betalist.com/submit",
+      "checked_at": "2026-08-24T12:19:43Z",
+      "finding": "HTTP 200 but the entire 86-byte body is a Turbo redirect directive: Content-Type text/vnd.turbo-stream.html, payload '<turbo-stream action=\"redirect\" target=\"/sign_in\"><template></template></turbo-stream>'. An unauthenticated visitor is bounced straight to /sign_in - a hard login wall. No CAPTCHA seen, but an account is mandatory. robots.txt is effectively empty (comment only), so no ToS-level crawl ban, but the login wall alone forces Tier 3."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "wellfound",
+    "name": "Wellfound (AngelList Talent)",
+    "url": "https://wellfound.com",
+    "submission_url": "https://wellfound.com/company/new",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": true,
+    "category": "startup",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://wellfound.com/company/new",
+      "checked_at": "2026-08-24T12:55:00Z",
+      "finding": "Fresh unauthenticated GET returns HTTP 403 with a body titled \"Security Check | Wellfound\" containing cf_chl markers - a Cloudflare bot-detection challenge. The older /company_signup path 404s and its 404 page already embeds a Cloudflare Turnstile widget and challenge-platform script. Creating a company profile also requires a Wellfound account. Two independent Tier 3 triggers."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "about-me",
+    "name": "About.me",
+    "url": "https://about.me",
+    "submission_url": "https://about.me/signup",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": true,
+    "category": "profile",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://about.me/signup",
+      "checked_at": "2026-08-24T12:19:00Z",
+      "finding": "200 OK, but the delivered HTML contains BOTH reCAPTCHA (2 references) and hCaptcha (1 reference), and exposes zero <form>/<input> elements pre-auth - signup is a JS-rendered, CAPTCHA-protected account creation flow. Also note scope: about.me is a personal landing-page/profile host, not a SaaS or startup directory, so its marketing value for a product launch is marginal even after the manual click. Retained as Tier 3 because it was an explicit candidate, but it is the weakest entry in this file."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "topai-tools",
+    "name": "TopAI.tools",
+    "url": "https://topai.tools",
+    "submission_url": "https://topai.tools/submit",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": false,
+    "category": "ai",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://topai.tools/submit",
+      "checked_at": "2026-08-24T12:19:00Z",
+      "finding": "200 OK and the page title is genuinely \"Submit your AI tool - TopAI.Tools\", but there is NO submission form in the response. The only <form> present is the site's floating search widget (action=/ai-assist, id=floatingSearch, 1 input). The page renders a \"Sign in\" affordance and 3 login references, and a Cloudflare challenge-platform script is present on the page. Submission requires an authenticated account. Tier 3."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "peerlist",
+    "name": "Peerlist",
+    "url": "https://peerlist.io",
+    "submission_url": "https://peerlist.io/signup",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": false,
+    "category": "startup",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://peerlist.io/signup",
+      "checked_at": "2026-08-24T12:19:00Z",
+      "finding": "200 OK, title \"Join Peerlist\". Peerlist has no anonymous product-submission URL at all - projects are posted from a personal profile, so the entry point is account signup. The page carries a Cloudflare challenge-platform script and Log in / login references, and exposes only a 2-input auth form. A pre-existing logged-in account is mandatory. Tier 3."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "launching-next",
+    "name": "Launching Next",
+    "url": "https://www.launchingnext.com",
+    "submission_url": "https://www.launchingnext.com/submit/",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": true,
+    "category": "startup",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://www.launchingnext.com/submit/",
+      "checked_at": "2026-08-24T12:19:00Z",
+      "finding": "Fresh unauthenticated GET returns HTTP 403, Server: cloudflare, 5633-byte body titled \"Just a moment...\" with challenge-platform and cf_chl - Cloudflare JS interstitial. Even /robots.txt returns the same 403 interstitial, so the whole origin is challenge-gated for non-browser clients. Frequently cited in 2026 listicles as a free submission target; that is no longer true for an automated client."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "future-tools",
+    "name": "Future Tools",
+    "url": "https://futuretools.io",
+    "submission_url": "https://futuretools.io/submit-a-tool",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": true,
+    "category": "ai",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://futuretools.io/submit-a-tool",
+      "checked_at": "2026-08-24T12:35:00Z",
+      "finding": "THE CASE WHERE STATIC FETCH LIED. Raw curl returned 200 with a clean, free, server-rendered form (ids #submitter_name #tool_name #tool_url #description #category #submitter_email, radio pricing_tier, button[type=submit]) and no CAPTCHA string anywhere - it looked like a textbook Tier 2. Loading the same URL in a real Chrome page and re-scanning the live DOM found 'turnstile' and 'challenges.cloudflare', plus an injected hidden control <input name=\"cf-turnstile-response\" id=\"cf-chl-widget-lc7al_response\"> that does not exist in the static HTML. Cloudflare Turnstile is injected client-side at render. CAPTCHA-gated, therefore Tier 3 regardless of how clean the markup looks."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "uneed",
+    "name": "Uneed",
+    "url": "https://www.uneed.best",
+    "submission_url": "https://www.uneed.best/submit-a-tool",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": true,
+    "category": "saas",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://www.uneed.best/submit-a-tool",
+      "checked_at": "2026-08-24T12:19:00Z",
+      "finding": "200 OK, title \"Add your product to Uneed\", but the delivered HTML already contains a Cloudflare Turnstile reference plus a challenge-platform script, and only a 2-input form alongside a login reference. CAPTCHA-gated on a fresh unauthenticated request. Tier 3."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "startup-stash",
+    "name": "Startup Stash",
+    "url": "https://startupstash.com",
+    "submission_url": "https://startupstash.com/add-listing/",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": true,
+    "category": "startup",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://startupstash.com/add-listing/",
+      "checked_at": "2026-08-24T12:19:00Z",
+      "finding": "200 OK with a real 9-input listing form (title \"Add a Listing - Startup Stash\"), but the same response carries 7 separate reCAPTCHA references. Google reCAPTCHA is wired into the submit path on a fresh unauthenticated request. CAPTCHA-gated, Tier 3 - we do not automate past a challenge."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "killer-startups",
+    "name": "KillerStartups",
+    "url": "https://killerstartups.com",
+    "submission_url": "https://killerstartups.com/submit-startup/",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": true,
+    "category": "startup",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://killerstartups.com/submit-startup/",
+      "checked_at": "2026-08-24T12:45:00Z",
+      "finding": "200 OK, title \"Introduce your startup to the world - KillerStartups.com\", and the page is free to submit to, but the response contains a reCAPTCHA reference and zero <form>/<input> elements in the static HTML - the form is injected client-side together with the challenge. CAPTCHA-gated, Tier 3."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "openalternative",
+    "name": "OpenAlternative",
+    "url": "https://openalternative.co",
+    "submission_url": "https://openalternative.co/submit",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": false,
+    "category": "software",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://openalternative.co/submit",
+      "checked_at": "2026-08-24T12:19:00Z",
+      "finding": "Fresh unauthenticated GET follows 2 redirects and lands on https://openalternative.co/auth/login?next=/submit with title \"Sign In\" - an unambiguous login wall. Only a 2-input auth form is served. No CAPTCHA observed, but a pre-existing account is mandatory. Tier 3."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "startupbase",
+    "name": "StartupBase",
+    "url": "https://startupbase.io",
+    "submission_url": "https://startupbase.io/submit",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": false,
+    "category": "startup",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://startupbase.io/submit",
+      "checked_at": "2026-08-24T12:19:00Z",
+      "finding": "Fresh unauthenticated GET redirects to https://startupbase.io/login?origin=%2Fsubmit, title \"Sign in or create your account | StartupBase\" (7 Sign-in and 20 login references). Hard login wall; the only forms served are auth forms. No CAPTCHA observed in the static body. Tier 3."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "fazier",
+    "name": "Fazier",
+    "url": "https://fazier.com",
+    "submission_url": "https://fazier.com/submit",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": false,
+    "category": "startup",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://fazier.com/submit",
+      "checked_at": "2026-08-24T12:19:00Z",
+      "finding": "200 OK but the 36316-byte response contains zero <form>, <input> or <textarea> elements and renders the generic homepage title \"Fazier - Find your next favourite product, every day.\" Body text carries 2 \"Sign In\" prompts and 3 auth references. Submission is a client-side route behind authentication. Tier 3."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "startup-fast",
+    "name": "Startup Fast",
+    "url": "https://www.startupfa.st",
+    "submission_url": "https://www.startupfa.st/submit",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": false,
+    "category": "startup",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://www.startupfa.st/submit",
+      "checked_at": "2026-08-24T12:48:00Z",
+      "finding": "200 OK, verified in a real Chrome page: live DOM contains zero <form> elements and no CAPTCHA markers, but the header renders \"Sign in\" and the page is a pricing wall. A Free Launch tier at $0 does exist, but its stated terms are \"Badge Required - Free launches require displaying our badge on your website\", 5 slots/day, 90-day queue; the paid tier is $9. Submission requires an authenticated account plus an off-platform badge obligation. Tier 3."
+    },
+    "status": "active",
+    "requires_consent": false
+  },
+  {
+    "slug": "softwaresuggest",
+    "name": "SoftwareSuggest",
+    "url": "https://www.softwaresuggest.com",
+    "submission_url": "https://www.softwaresuggest.com/vendors",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": false,
+    "category": "saas",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://www.softwaresuggest.com/vendors",
+      "checked_at": "2026-08-24T12:52:00Z",
+      "finding": "200 OK, title \"List Your Product For Free On SoftwareSuggest\", and a real-Chrome live-DOM scan for recaptcha/hcaptcha/turnstile/grecaptcha/challenges.cloudflare returned ZERO matches - genuinely no challenge and genuinely free. Classified Tier 3 anyway for a data reason, not a bot-defence reason: it is a two-step wizard (#vendors_details_first_form -> #next_submit, then #vendors_details_second_form -> #final_submit) whose REQUIRED fields cannot be filled from SubmissionPayload - GetListed[phone] (phone number), GetListed[number_of_employee], GetListed[number_of_customer], GetListed[comp_competitors] and two mandatory consent checkboxes. It is a sales-qualification lead form, not a product listing form. Automating it would half-fail in production, so it goes to the user as a pre-filled manual step."
+    },
+    "status": "active",
+    "requires_consent": false,
+    "requires_profile_fields": [
+      "phone",
+      "employee_count",
+      "customer_count",
+      "competitors"
+    ]
+  },
+  {
+    "slug": "aitools-inc",
+    "name": "AI Tools (aitools.inc)",
+    "url": "https://aitools.inc",
+    "submission_url": "https://aitools.inc/submit",
+    "tier": 3,
+    "submission_method": "manual",
+    "requires_captcha": false,
+    "category": "ai",
+    "domain_rating": null,
+    "form_schema": null,
+    "api_config": null,
+    "evidence": {
+      "checked_url": "https://aitools.inc/submit",
+      "checked_at": "2026-08-24T12:58:00Z",
+      "finding": "200 OK and a real Free Listing tier at $0/mo (30-90 day queue) alongside a $129 Fast Lane. Verified in a real Chrome page: zero CAPTCHA markers, but also zero <form> elements - the page is a pricing landing page. The free \"Submit Now\" CTA links off-site to a Typeform (https://loxr142exnq.typeform.com/to/RB6ZnEf2). Typeform is a one-question-at-a-time SPA with generated, unstable selectors that cannot be expressed as a durable field map, and Typeform's terms prohibit automated response submission. Tier 3 on both durability and ToS grounds."
+    },
+    "status": "active",
+    "requires_consent": false
+  }
+]
