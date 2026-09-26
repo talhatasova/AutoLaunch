@@ -5,7 +5,7 @@ import { PlaywrightPool } from "../net/browser";
 import { DomainRateLimiter } from "../net/rate-limit";
 
 export async function recheckCertifiedTargets(db: SupabaseClient, pool: PlaywrightPool, limiter: DomainRateLimiter) {
-  const { data, error } = await db.from("directories").select("id,name,submission_url,form_schema,status,automation_verified_at,automation_checked_at")
+  const { data, error } = await db.from("directories").select("id,name,submission_url,form_schema,status,automation_verified_at,automation_checked_at,price_checked_at,last_verified_at")
     .not("automation_verified_at", "is", null);
   if (error) throw new Error(`Could not load certified targets: ${error.message}`);
   const dueBefore = Date.now() - 7 * 86400000;
@@ -34,6 +34,11 @@ export async function recheckCertifiedTargets(db: SupabaseClient, pool: Playwrig
     } catch (cause) {
       note = cause instanceof Error ? cause.message : String(cause);
       broken = true;
+    }
+    if (!row.price_checked_at || Date.parse(row.price_checked_at) <= dueBefore ||
+        !row.last_verified_at || Date.parse(row.last_verified_at) <= dueBefore) {
+      note += " Editorial price or site-rule review is overdue; this target cannot be selected.";
+      console.warn(`${row.name}: editorial certification is overdue`);
     }
     const { error: updateError } = await db.from("directories").update({
       automation_checked_at: new Date().toISOString(), automation_check_note: note,
