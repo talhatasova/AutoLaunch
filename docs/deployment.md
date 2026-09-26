@@ -2,6 +2,10 @@
 
 The Supabase schema is migrated and the 23-directory catalog is seeded. The production gate stays closed until five free directories have current, consented end-to-end certification records. Existing seed rows are research, including the two form candidates.
 
+## Current preview
+
+Railway `dev` runs the [web preview](https://web-dev-f23b.up.railway.app) and [API](https://api-dev-b714.up.railway.app/health) alongside a healthy Playwright worker. The temporary web host serves both landing and app paths; the production host split still uses `xxx.com` and `app.xxx.com` placeholders. The production worker is also healthy, but no directory is certified or eligible for a send. Email Auth is enabled in Supabase; Google Auth still needs its OAuth client and provider configuration.
+
 ## Services
 
 Create three Railway services from the repository root, each with its own `RAILWAY_DOCKERFILE_PATH`:
