@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+!.env.example
+node_modules
+**/node_modules
+**/.next
+**/__pycache__
+**/.pytest_cache
+.scratch
+**/.scratch
+supabase/.temp

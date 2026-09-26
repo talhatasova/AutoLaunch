@@ -28,6 +28,7 @@ export interface SubmissionContext {
 
 /** Progress reporting. Each call becomes a submission_events row - see queue/reporter.ts. */
 export interface DriverReporter {
+  submitAttempted?(): Promise<void>;
   fieldFilled(selector: string, payloadKey: string): Promise<void>;
   submitted(detail: string): Promise<void>;
   note(kind: "started", message: string, payload?: Record<string, unknown>): Promise<void>;

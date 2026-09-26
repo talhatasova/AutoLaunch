@@ -15,4 +15,9 @@ blob-report/
 
 .DS_Store
 *.log
+__pycache__/
+*.pyc
+.pytest_cache/
+supabase/.temp/
+apps/worker/.scratch/
 npm-debug.log*

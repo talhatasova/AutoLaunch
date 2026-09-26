@@ -109,6 +109,12 @@ export const directorySchema = z.object({
   requires_profile_fields: z.array(z.string()).default([]),
   evidence: evidenceSchema,
   status: directoryStatusSchema,
+  price_kind: z.enum(["free", "paid", "unknown"]).default("unknown"),
+  price_note: z.string().nullable().default(null),
+  price_source_url: z.string().url().nullable().default(null),
+  price_checked_at: z.string().datetime().nullable().default(null),
+  obligation: z.string().nullable().default(null),
+  terms_url: z.string().url().nullable().default(null),
 });
 export type Directory = z.infer<typeof directorySchema>;
 

@@ -1,4 +1,4 @@
-# DirectoryLaunch worker: pg-boss consumer + Playwright.
+# DirectoryLaunch worker: approved Postgres jobs + Playwright.
 #
 # Build from the REPOSITORY ROOT, not from apps/worker:
 #   docker build -f apps/worker/Dockerfile -t directorylaunch-worker .
@@ -51,7 +51,6 @@ COPY apps/worker ./apps/worker
 # there is no reason to run as root and no need for --no-sandbox.
 USER pwuser
 
-# No EXPOSE and no HEALTHCHECK on an HTTP port: this service listens on nothing. Its
-# liveness signal is pg-boss job throughput, which is visible in submission_events.
+# This service listens on no HTTP port. Job progress is visible in submission_events.
 WORKDIR /app/apps/worker
 CMD ["pnpm", "start"]

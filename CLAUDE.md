@@ -6,7 +6,9 @@ DirectoryLaunch helps SaaS founders find suitable listing directories, submit pr
 
 - Railway hosts the services. FastAPI owns the application API, React owns the web interface, and a Playwright worker handles verified form submissions.
 - Supabase provides Postgres and authentication. Treat directory websites and user supplied URLs as untrusted inputs.
+- Founder approval writes a payload snapshot and a Postgres job in one transaction. The worker claims each job once; ambiguous sends require investigation before retry.
 - Keep marketing and application entry points separate. Record submission receipt, review, and live publication as distinct outcomes. Recheck automatic integrations every seven days.
+- Candidate directories stay research only until five free targets pass live end-to-end certification for release. The current seed certifies none.
 - Prefer small modules with one clear responsibility and explicit boundaries. Apply SOLID when it removes coupling; use the simplest design that satisfies the current behavior.
 
 ## Skill map

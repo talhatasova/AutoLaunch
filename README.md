@@ -1,63 +1,24 @@
 # DirectoryLaunch
 
-A founder pastes their SaaS URL. We publish their listing to a curated set of free
-SaaS/startup directories and show live per-directory status.
+DirectoryLaunch helps solo SaaS founders review a product profile, choose verified free listing directories, approve the exact submission details, and track receipts separately from live listings. `xxx.com` and `app.xxx.com` are placeholder hosts.
 
-The differentiator versus directory-*list* sites is that we actually perform the
-submission rather than pointing people at where to go.
+The free beta allows two products and two directory submissions per product. The catalog includes research entries, but an automatic target is selectable only after its complete free path, site rules, and receipt have been verified within seven days. No real directory is certified yet; five are required before launch.
 
-## What we will not do
+## Services
 
-1. **Never defeat CAPTCHA or bot detection.** A Cloudflare challenge, reCAPTCHA, or
-   hCaptcha means the directory is Tier 3 and the submission resolves `needs_manual`. We
-   do not solve it, evade it, or retry hoping to slip through.
-2. **Never fabricate identities.** Where a form needs an email, it is the authenticated
-   founder's own, disclosed in the UI before submission.
-3. **Nothing fails silently.** Every integration carries `last_verified_at` and an
-   `active`/`broken` status. A form that changed marks the directory broken rather than
-   retrying into the void.
+- `apps/web`: React/Next marketing and application UI, Supabase email and Google sign in, and the SSRF guarded product metadata scraper.
+- `apps/api`: FastAPI for authenticated products, catalog, selection approval, retry, and status reads.
+- `apps/worker`: Playwright form worker. It claims only founder-approved database jobs and never retries an ambiguous send automatically.
+- `supabase/migrations`: tenant policies, beta limits, immutable approval snapshots, and transactional jobs.
 
-`needs_manual` is a **success state**, not a failure: the payload is assembled and the
-user does one click.
+See [CLAUDE.md](CLAUDE.md) for the project and skill map, [the product contract](.scratch/directorylaunch-v1/spec.md), and [ADR-0002](docs/adr/0002-fastapi-and-native-queue.md).
 
-## Tiers
+## Local setup
 
-| Tier | Method | Handling |
-|------|--------|----------|
-| 1 | Real public create-listing API | Automated via typed API client |
-| 2 | Plain HTML form, no challenge | Automated via one generic Playwright driver |
-| 3 | CAPTCHA / login wall / manual review | Pre-filled payload, handed to the user |
+1. Install Node 22, pnpm 9, Python 3.12+, and a local or intended Supabase project.
+2. Copy `.env.example` values into service environments. The service role key belongs in the API and worker only; `INTERNAL_VERIFY_KEY` belongs in the API and web service.
+3. Apply migrations in timestamp order and seed the catalog with `pnpm seed:directories`. Seed entries are research only until certified.
+4. Run `pnpm --filter web dev`, `uvicorn app.main:app --reload` from `apps/api`, and `pnpm --filter worker start` in separate terminals.
+5. Configure Supabase Auth site URL and redirect allow list for the app host. Enable email links and Google. For the `/auth/confirm` token-hash route, use an email template pointing to `/auth/confirm?token_hash={{ .TokenHash }}`; the default confirmation URL can use `/auth/callback`.
 
-Tier 1 is rarer than it looks. Product Hunt's public API v2 is read-only — it cannot
-create a submission, so the most obvious "free directory" is not Tier 1.
-
-## Architecture
-
-Two Railway services against one Supabase project:
-
-- **`apps/web`** — Next.js App Router. Auth, metadata scraping, job enqueue, dashboard.
-- **`apps/worker`** — pg-boss consumer + Playwright. Runs the actual submissions.
-- **`packages/shared`** — zod contracts both sides must agree on.
-
-See [`docs/adr/0001-job-queue.md`](docs/adr/0001-job-queue.md) for why the queue is
-pg-boss rather than a managed runner.
-
-> **Connection gotcha:** pg-boss needs a **session-mode** Postgres connection (port 5432).
-> Supabase's transaction pooler on 6543 breaks its prepared statements and advisory locks.
-> The symptom is jobs that enqueue and never run — no error, no crash. If the queue looks
-> stuck, check `DATABASE_URL` before debugging application code.
-
-## Setup
-
-```bash
-pnpm install
-cp .env.example .env   # fill in Supabase credentials
-pnpm validate:seed     # check seed/directories.json against the contract
-pnpm dev               # web
-pnpm worker            # worker, separate terminal
-```
-
-## Subagents
-
-Eight role definitions live in `.claude/agents/`. Each names the skills it loads and the
-constraints it owns.
+Run `pnpm -r typecheck`, `pnpm --filter web test`, `pnpm --filter worker test`, and `python -m pytest` in `apps/api` before release. The intended Supabase project and Railway services must be connected before production verification.

@@ -51,4 +51,5 @@ console.log(`seed/directories.json OK - ${dirs.length} directories`);
 console.log(`  Tier 1 (API):    ${byTier[1]}`);
 console.log(`  Tier 2 (form):   ${byTier[2]}`);
 console.log(`  Tier 3 (manual): ${byTier[3]}`);
-console.log(`  Automatable now: ${byTier[1] + byTier[2]}`);
+console.log(`  Automation candidates, pending certification: ${byTier[1] + byTier[2]}`);
+console.log("  Certified selectable targets: 0 (certification is stored separately)");

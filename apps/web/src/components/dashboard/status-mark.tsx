@@ -34,9 +34,12 @@ import type { SubmissionStatus } from "@/lib/data";
 export const STATUS_LABEL: Record<SubmissionStatus, string> = {
   queued: "Queued",
   running: "Submitting",
-  succeeded: "Published",
+  succeeded: "Receipt",
   failed: "Blocked",
   needs_manual: "Ready for you",
+  pending_review: "Pending review",
+  unconfirmed: "Unconfirmed",
+  live: "Verified live",
 };
 
 /** How far the ink has travelled for a given status. */
@@ -46,6 +49,9 @@ const FILL: Record<SubmissionStatus, number> = {
   succeeded: 1,
   failed: 1,
   needs_manual: 1,
+  pending_review: 1,
+  unconfirmed: 1,
+  live: 1,
 };
 
 const FIELD: Record<SubmissionStatus, string> = {
@@ -56,12 +62,16 @@ const FIELD: Record<SubmissionStatus, string> = {
   // 12% of the accent. Enough to group 21 rows into one legible band of
   // "delivered", nowhere near enough to shout.
   needs_manual: "bg-signal/12",
+  pending_review: "bg-paper-sunk",
+  unconfirmed: "bg-paper-sunk",
+  live: "bg-ink",
 };
 
 /** Text colour that sits on top of the field once it has landed. */
 export function statusTextClass(status: SubmissionStatus): string {
   switch (status) {
     case "succeeded":
+    case "live":
       return "text-paper";
     case "running":
     case "needs_manual":

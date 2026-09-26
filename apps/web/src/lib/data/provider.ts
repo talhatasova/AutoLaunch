@@ -397,6 +397,12 @@ function fallbackDetail(status: SubmissionStatus, name: string): string {
       return `${name} is ready for you. The payload is assembled - one click submits it.`;
     case "failed":
       return `The submission to ${name} did not go through. The log has the details.`;
+    case "pending_review":
+      return `${name} sent a receipt and is reviewing the listing.`;
+    case "unconfirmed":
+      return `${name} may have received the submission; investigate before retrying.`;
+    case "live":
+      return `${name} has a verified public listing.`;
   }
 }
 

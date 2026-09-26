@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -11,30 +10,32 @@ import { Button } from "@/components/ui/button";
  * hanging there as a light strip over dark content.
  */
 export function SiteNav() {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const marketingUrl = process.env.NEXT_PUBLIC_MARKETING_URL ?? "http://localhost:3000";
   return (
     // Opaque, with no blur. A translucent bar is the one place a "floating
     // glass" register creeps back in, and the masthead sits ON the page.
     <header className="edge-b surface-page sticky top-0 z-30 transition-colors duration-500 ease-[var(--ease-soft)]">
       <div className="shell flex h-14 items-center justify-between gap-6">
-        <Link href="/" className="t-meta fg-heading cursor-pointer hover:text-[var(--accent)]">
+        <a href={marketingUrl} className="t-meta fg-heading cursor-pointer hover:text-[var(--accent)]">
           Directory<span className="fg-accent">Launch</span>
-        </Link>
+        </a>
 
         <nav className="flex items-center gap-5" aria-label="Main">
-          <Link
-            href="/#directories"
+          <a
+            href={`${marketingUrl}/#how-it-works`}
             className="t-micro fg-muted hidden cursor-pointer hover:text-[var(--text-heading)] sm:inline"
           >
-            Directories
-          </Link>
-          <Link
-            href="/dashboard"
+            How it works
+          </a>
+          <a
+            href={`${appUrl}/dashboard`}
             className="t-micro fg-muted cursor-pointer hover:text-[var(--text-heading)]"
           >
             Dashboard
-          </Link>
+          </a>
           <Button asChild variant="signal" size="sm">
-            <Link href="/#start">Start a launch</Link>
+            <a href={`${appUrl}/auth/sign-in`}>Open beta</a>
           </Button>
         </nav>
       </div>

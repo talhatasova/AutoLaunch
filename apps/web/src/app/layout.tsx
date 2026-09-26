@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     template: "%s — DirectoryLaunch",
   },
   description:
-    "Paste your app URL. We submit your listing to free SaaS and startup directories and show you the status of every one, live.",
+    "Review your SaaS details once, choose verified free directories, and track each submission from receipt to live listing.",
 };
 
 export const viewport: Viewport = {

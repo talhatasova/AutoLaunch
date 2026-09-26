@@ -1,13 +1,11 @@
-import Link from "next/link";
-import { ALL_DIRECTORIES } from "@/lib/data";
-
 /**
  * The footer inherits whatever theme the last section left on the body, so it
  * reads as the continuation of the closing block rather than as a light strip
  * bolted underneath it.
  */
 export function SiteFooter() {
-  const tier3 = ALL_DIRECTORIES.filter((d) => d.tier === 3).length;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const marketingUrl = process.env.NEXT_PUBLIC_MARKETING_URL ?? "http://localhost:3000";
 
   return (
     <footer className="edge-t surface-page transition-colors duration-500 ease-[var(--ease-soft)]">
@@ -17,31 +15,24 @@ export function SiteFooter() {
             Directory<span className="fg-accent">Launch</span>
           </p>
           <p className="fg-muted mt-3 max-w-[52ch] text-[0.8125rem] leading-relaxed">
-            We submit listings; we do not solve CAPTCHAs, create accounts on your behalf, or
-            invent an identity. {tier3} directories require a human, and we say so on the board
-            instead of hiding them.
+            Curated directory research and verified automatic submissions for SaaS founders.
+            Every receipt, review, and live listing keeps its own status.
           </p>
         </div>
 
         <nav className="flex flex-wrap gap-x-6 gap-y-2 sm:flex-col sm:items-end" aria-label="Footer">
-          <Link
-            href="/#directories"
+          <a
+            href={`${marketingUrl}/#how-it-works`}
             className="t-micro fg-muted cursor-pointer hover:text-[var(--text-heading)]"
           >
-            Directory list
-          </Link>
-          <Link
-            href="/#tiers"
-            className="t-micro fg-muted cursor-pointer hover:text-[var(--text-heading)]"
-          >
-            How tiers work
-          </Link>
-          <Link
-            href="/dashboard"
+            How it works
+          </a>
+          <a
+            href={`${appUrl}/dashboard`}
             className="t-micro fg-muted cursor-pointer hover:text-[var(--text-heading)]"
           >
             Dashboard
-          </Link>
+          </a>
         </nav>
       </div>
     </footer>

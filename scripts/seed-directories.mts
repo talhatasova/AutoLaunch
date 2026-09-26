@@ -74,6 +74,12 @@ const rows = parsed.data.map((d) => ({
   // The evidence block records when we last actually looked at the site.
   last_verified_at: d.evidence.checked_at,
   status: d.status,
+  price_kind: d.price_kind,
+  price_note: d.price_note,
+  price_source_url: d.price_source_url,
+  price_checked_at: d.price_checked_at,
+  obligation: d.obligation,
+  terms_url: d.terms_url,
 }));
 
 if (rows.length === 0) {

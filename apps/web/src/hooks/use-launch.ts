@@ -47,6 +47,9 @@ function tally(rows: LaunchRow[]): LaunchTally {
     succeeded: 0,
     failed: 0,
     needs_manual: 0,
+    pending_review: 0,
+    unconfirmed: 0,
+    live: 0,
   };
   for (const row of rows) counts[row.status] += 1;
   return {

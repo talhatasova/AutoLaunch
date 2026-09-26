@@ -40,7 +40,7 @@ export function supabaseAnonKey(): string {
 
 /** Absolute origin for OAuth redirect URLs. Must match Supabase's allow-list. */
 export function siteUrl(): string {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL;
+  const configured = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
   if (configured && configured.length > 0) return configured.replace(/\/$/, "");
   return "http://localhost:3000";
 }

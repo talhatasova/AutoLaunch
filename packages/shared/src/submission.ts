@@ -139,6 +139,9 @@ export const submissionEventKindSchema = z.enum([
   "selector_missing",
   "retry_scheduled",
   "failed",
+  "receipt",
+  "unconfirmed",
+  "live",
 ]);
 export type SubmissionEventKind = z.infer<typeof submissionEventKindSchema>;
 

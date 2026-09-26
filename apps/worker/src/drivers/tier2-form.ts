@@ -178,6 +178,9 @@ export class Tier2FormDriver implements Driver {
       );
     }
 
+    // Once the click begins, a timeout may still mean the site received the form.
+    // Record the uncertain boundary before handing control to the browser.
+    await report.submitAttempted?.();
     await page.click(schema.submit_selector);
     await report.submitted(
       `Submitted ${filled.length} mapped fields to ${directory.name}; waiting for ` +

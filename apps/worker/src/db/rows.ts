@@ -37,6 +37,12 @@ export const directoryRowSchema = z.object({
    */
   requires_consent: z.boolean().optional(),
   requires_profile_fields: z.array(z.string()).optional(),
+  price_kind: z.enum(["free", "paid", "unknown"]).optional(),
+  price_note: z.string().nullable().optional(),
+  price_source_url: z.string().nullable().optional(),
+  price_checked_at: z.string().nullable().optional(),
+  obligation: z.string().nullable().optional(),
+  terms_url: z.string().nullable().optional(),
 });
 export type DirectoryRow = z.infer<typeof directoryRowSchema>;
 

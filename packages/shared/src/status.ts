@@ -14,6 +14,9 @@ export const submissionStatusSchema = z.enum([
   "succeeded",
   "failed",
   "needs_manual",
+  "pending_review",
+  "unconfirmed",
+  "live",
 ]);
 export type SubmissionStatus = z.infer<typeof submissionStatusSchema>;
 
@@ -22,13 +25,14 @@ export const TERMINAL_STATUSES = [
   "succeeded",
   "failed",
   "needs_manual",
+  "live",
 ] as const satisfies readonly SubmissionStatus[];
 
 export function isTerminal(status: SubmissionStatus): boolean {
   return (TERMINAL_STATUSES as readonly SubmissionStatus[]).includes(status);
 }
 
-export const appStatusSchema = z.enum(["draft", "ready", "launching", "done"]);
+export const appStatusSchema = z.enum(["draft", "ready", "launching", "done", "submitted"]);
 export type AppStatus = z.infer<typeof appStatusSchema>;
 
 /** Directory health. `broken` means a verified integration stopped working. */

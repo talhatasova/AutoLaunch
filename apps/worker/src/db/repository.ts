@@ -151,6 +151,12 @@ export function toDirectory(row: DirectoryRow): Directory {
       []) as Directory["requires_profile_fields"],
     evidence: row.evidence as Directory["evidence"],
     status: row.status,
+    price_kind: row.price_kind ?? "unknown",
+    price_note: row.price_note ?? null,
+    price_source_url: row.price_source_url ?? null,
+    price_checked_at: row.price_checked_at ?? null,
+    obligation: row.obligation ?? null,
+    terms_url: row.terms_url ?? null,
   };
 }
 

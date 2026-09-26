@@ -1,7 +1,28 @@
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const marketingUrl = process.env.NEXT_PUBLIC_MARKETING_URL;
+  // Next normalizes nextUrl.origin to localhost in development; Host preserves
+  // the domain the visitor actually used (and Railway forwards that host).
+  const host = request.headers.get("host") ?? request.nextUrl.host;
+  const path = request.nextUrl.pathname;
+
+  if (appUrl && host === new URL(appUrl).host && path === "/") {
+    return NextResponse.redirect(new URL("/dashboard", appUrl));
+  }
+  if (
+    appUrl && marketingUrl &&
+    host === new URL(marketingUrl).host &&
+    /^(\/dashboard|\/auth)(\/|$)/.test(path)
+  ) {
+    return NextResponse.redirect(new URL(path + request.nextUrl.search, appUrl));
+  }
+  if (marketingUrl && host === new URL(marketingUrl).host) {
+    return NextResponse.next();
+  }
   return await updateSession(request);
 }
 

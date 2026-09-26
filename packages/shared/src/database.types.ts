@@ -223,7 +223,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      app_status: "draft" | "ready" | "launching" | "done"
+      app_status: "draft" | "ready" | "launching" | "done" | "submitted"
       directory_status: "active" | "broken"
       submission_event_kind:
         | "queued"
@@ -236,6 +236,9 @@ export type Database = {
         | "selector_missing"
         | "retry_scheduled"
         | "failed"
+        | "receipt"
+        | "unconfirmed"
+        | "live"
       submission_method: "api" | "form" | "manual"
       submission_status:
         | "queued"
@@ -243,6 +246,9 @@ export type Database = {
         | "succeeded"
         | "failed"
         | "needs_manual"
+        | "pending_review"
+        | "unconfirmed"
+        | "live"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -370,7 +376,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_status: ["draft", "ready", "launching", "done"],
+      app_status: ["draft", "ready", "launching", "done", "submitted"],
       directory_status: ["active", "broken"],
       submission_event_kind: [
         "queued",
@@ -383,6 +389,9 @@ export const Constants = {
         "selector_missing",
         "retry_scheduled",
         "failed",
+        "receipt",
+        "unconfirmed",
+        "live",
       ],
       submission_method: ["api", "form", "manual"],
       submission_status: [
@@ -391,6 +400,9 @@ export const Constants = {
         "succeeded",
         "failed",
         "needs_manual",
+        "pending_review",
+        "unconfirmed",
+        "live",
       ],
     },
   },

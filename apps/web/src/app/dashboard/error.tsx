@@ -1,21 +1,11 @@
 "use client";
 
-import { BoardError } from "@/components/dashboard/states";
+import { Button } from "@/components/ui/button";
 
-/** Route-level error boundary. Says what happened and what to do about it. */
-export default function DashboardError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  return (
-    <div className="shell pt-16 pb-24">
-      <BoardError
-        message={error.message || "The board hit an unexpected error while rendering."}
-        onRetry={reset}
-      />
-    </div>
-  );
+export default function DashboardError({ reset }: { error: Error; reset: () => void }) {
+  return <main className="shell min-h-[70dvh] py-16">
+    <h1 className="t-display-sm fg-heading">Could not load your workspace.</h1>
+    <p className="fg-body mt-4">Please try again. If the problem continues, contact us.</p>
+    <Button type="button" variant="signal" className="mt-8" onClick={reset}>Try again</Button>
+  </main>;
 }
