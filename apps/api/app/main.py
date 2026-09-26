@@ -400,7 +400,6 @@ async def verify_live(
             f"{supabase_url.rstrip('/')}/rest/v1/rpc/confirm_live_listing",
             headers={
                 "apikey": service_key,
-                "Authorization": f"Bearer {service_key}",
             },
             json={
                 "p_submission_id": str(submission_id), "p_owner_id": str(founder.id),
