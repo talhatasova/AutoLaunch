@@ -9,6 +9,7 @@ build/
 .env.*
 !.env.example
 client_secret_*.json
+.playwright-cli/
 
 playwright-report/
 test-results/

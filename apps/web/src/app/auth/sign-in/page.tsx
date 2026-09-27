@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -34,7 +33,7 @@ export default async function SignInPage({
         {error && <p role="alert" className="t-micro fg-danger mt-4">Enter a valid email address and try again.</p>}
         <div className="mt-7 flex items-center gap-4"><span className="edge-t flex-1" /><span className="t-micro fg-faint">or</span><span className="edge-t flex-1" /></div>
         <Button asChild variant="outline" size="lg" className="mt-7 w-full">
-          <Link href="/auth/google">Continue with Google</Link>
+          <a href="/auth/google">Continue with Google</a>
         </Button>
       </div>
     </main>
