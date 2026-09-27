@@ -9,18 +9,20 @@ export async function middleware(request: NextRequest) {
   // the domain the visitor actually used (and Railway forwards that host).
   const host = request.headers.get("host") ?? request.nextUrl.host;
   const path = request.nextUrl.pathname;
+  const appHost = appUrl && new URL(appUrl).host;
+  const marketingHost = marketingUrl && new URL(marketingUrl).host;
 
-  if (appUrl && host === new URL(appUrl).host && host !== (marketingUrl && new URL(marketingUrl).host) && path === "/") {
+  if (appUrl && appHost !== marketingHost && host === appHost && path === "/") {
     return NextResponse.redirect(new URL("/dashboard", appUrl));
   }
   if (
-    appUrl && marketingUrl &&
-    host === new URL(marketingUrl).host &&
+    appUrl && appHost !== marketingHost &&
+    host === marketingHost &&
     /^(\/dashboard|\/auth)(\/|$)/.test(path)
   ) {
     return NextResponse.redirect(new URL(path + request.nextUrl.search, appUrl));
   }
-  if (marketingUrl && host === new URL(marketingUrl).host) {
+  if (marketingHost && marketingHost !== appHost && host === marketingHost) {
     return NextResponse.next();
   }
   return await updateSession(request);

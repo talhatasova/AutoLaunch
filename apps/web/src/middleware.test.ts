@@ -1,6 +1,9 @@
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { middleware } from "./middleware";
+
+vi.mock("@/lib/supabase/middleware", () => ({ updateSession: vi.fn(() => NextResponse.next()) }));
 
 afterEach(() => {
   delete process.env.NEXT_PUBLIC_APP_URL;
@@ -26,4 +29,7 @@ it("serves the landing page when a preview uses one host", async () => {
 
   const landing = await middleware(new NextRequest("https://preview.example.test/"));
   expect(landing.headers.get("location")).toBeNull();
+
+  const signIn = await middleware(new NextRequest("https://preview.example.test/auth/sign-in"));
+  expect(signIn.headers.get("location")).toBeNull();
 });
