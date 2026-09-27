@@ -4,7 +4,7 @@ The Supabase schema is migrated and the 23-directory catalog is seeded. The prod
 
 ## Current preview
 
-Railway `dev` runs the [web preview](https://web-dev-f23b.up.railway.app) and [API](https://api-dev-b714.up.railway.app/health) alongside a healthy Playwright worker. The temporary web host serves both landing and app paths; the production host split still uses `xxx.com` and `app.xxx.com` placeholders. The production worker is also healthy, but no directory is certified or eligible for a send. Email Auth is enabled in Supabase; Google Auth still needs its OAuth client and provider configuration.
+Railway `dev` runs the [web preview](https://web-dev-f23b.up.railway.app) and [API](https://api-dev-b714.up.railway.app/health) alongside a healthy Playwright worker. The temporary web host serves both landing and app paths; the production host split still uses `xxx.com` and `app.xxx.com` placeholders. The production worker is also healthy, but no directory is certified or eligible for a send. Email and Google Auth are enabled; Supabase's Site URL and redirect allow list still need to be verified for the Railway preview.
 
 ## Services
 
