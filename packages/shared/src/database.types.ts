@@ -24,8 +24,11 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          launch_post: string | null
           logo_url: string | null
+          long_description: string | null
           name: string
+          public_contact_email: string | null
           scraped_at: string | null
           screenshot_url: string | null
           status: Database["public"]["Enums"]["app_status"]
@@ -40,8 +43,11 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          launch_post?: string | null
           logo_url?: string | null
+          long_description?: string | null
           name: string
+          public_contact_email?: string | null
           scraped_at?: string | null
           screenshot_url?: string | null
           status?: Database["public"]["Enums"]["app_status"]
@@ -56,8 +62,11 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          launch_post?: string | null
           logo_url?: string | null
+          long_description?: string | null
           name?: string
+          public_contact_email?: string | null
           scraped_at?: string | null
           screenshot_url?: string | null
           status?: Database["public"]["Enums"]["app_status"]
@@ -70,17 +79,23 @@ export type Database = {
       directories: {
         Row: {
           api_config: Json | null
+          automation: string
           automation_check_note: string | null
           automation_checked_at: string | null
           automation_verified_at: string | null
           category: string
+          challenge_kind: string
+          channel_type: string
           created_at: string
           domain_rating: number | null
           evidence: Json
           form_schema: Json | null
           id: string
           last_verified_at: string | null
+          live_lookup: Json | null
           name: string
+          needs_email_verification: boolean
+          needs_platform_account: boolean
           obligation: string | null
           price_checked_at: string | null
           price_kind: string
@@ -90,28 +105,36 @@ export type Database = {
           requires_consent: boolean
           requires_profile_fields: string[]
           receipt_verified: boolean
+          recipe: Json | null
           rules_permit_automation: boolean
           slug: string
           status: Database["public"]["Enums"]["directory_status"]
           submission_method: Database["public"]["Enums"]["submission_method"]
           submission_url: string
+          terms_prohibit_automation: boolean
           terms_url: string | null
           tier: number
           url: string
         }
         Insert: {
           api_config?: Json | null
+          automation?: string
           automation_check_note?: string | null
           automation_checked_at?: string | null
           automation_verified_at?: string | null
           category: string
+          challenge_kind?: string
+          channel_type?: string
           created_at?: string
           domain_rating?: number | null
           evidence: Json
           form_schema?: Json | null
           id?: string
           last_verified_at?: string | null
+          live_lookup?: Json | null
           name: string
+          needs_email_verification?: boolean
+          needs_platform_account?: boolean
           obligation?: string | null
           price_checked_at?: string | null
           price_kind?: string
@@ -121,28 +144,36 @@ export type Database = {
           requires_consent?: boolean
           requires_profile_fields?: string[]
           receipt_verified?: boolean
+          recipe?: Json | null
           rules_permit_automation?: boolean
           slug: string
           status?: Database["public"]["Enums"]["directory_status"]
           submission_method: Database["public"]["Enums"]["submission_method"]
           submission_url: string
+          terms_prohibit_automation?: boolean
           terms_url?: string | null
           tier: number
           url: string
         }
         Update: {
           api_config?: Json | null
+          automation?: string
           automation_check_note?: string | null
           automation_checked_at?: string | null
           automation_verified_at?: string | null
           category?: string
+          challenge_kind?: string
+          channel_type?: string
           created_at?: string
           domain_rating?: number | null
           evidence?: Json
           form_schema?: Json | null
           id?: string
           last_verified_at?: string | null
+          live_lookup?: Json | null
           name?: string
+          needs_email_verification?: boolean
+          needs_platform_account?: boolean
           obligation?: string | null
           price_checked_at?: string | null
           price_kind?: string
@@ -152,16 +183,74 @@ export type Database = {
           requires_consent?: boolean
           requires_profile_fields?: string[]
           receipt_verified?: boolean
+          recipe?: Json | null
           rules_permit_automation?: boolean
           slug?: string
           status?: Database["public"]["Enums"]["directory_status"]
           submission_method?: Database["public"]["Enums"]["submission_method"]
           submission_url?: string
+          terms_prohibit_automation?: boolean
           terms_url?: string | null
           tier?: number
           url?: string
         }
         Relationships: []
+      }
+      founder_profiles: {
+        Row: {
+          created_at: string
+          plan: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          plan?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          plan?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      platform_accounts: {
+        Row: {
+          directory_id: string
+          id: string
+          secret_enc: string
+          session_enc: string | null
+          status: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          directory_id: string
+          id?: string
+          secret_enc: string
+          session_enc?: string | null
+          status?: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          directory_id?: string
+          id?: string
+          secret_enc?: string
+          session_enc?: string | null
+          status?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_accounts_directory_id_fkey"
+            columns: ["directory_id"]
+            isOneToOne: true
+            referencedRelation: "directories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       submission_events: {
         Row: {
@@ -204,13 +293,17 @@ export type Database = {
           approved_at: string | null
           approved_payload: Json | null
           attempt_count: number
+          challenge_cost_cents: number
           consent_granted_at: string | null
           created_at: string
           directory_id: string
           error_message: string | null
           id: string
+          inbox_address: string | null
+          live_check_deadline: string | null
           live_checked_at: string | null
           next_attempt_at: string | null
+          next_live_check_at: string | null
           obligation_confirmed_at: string | null
           receipt_evidence: Json | null
           result_url: string | null
@@ -222,13 +315,17 @@ export type Database = {
           approved_at?: string | null
           approved_payload?: Json | null
           attempt_count?: number
+          challenge_cost_cents?: number
           consent_granted_at?: string | null
           created_at?: string
           directory_id: string
           error_message?: string | null
           id?: string
+          inbox_address?: string | null
+          live_check_deadline?: string | null
           live_checked_at?: string | null
           next_attempt_at?: string | null
+          next_live_check_at?: string | null
           obligation_confirmed_at?: string | null
           receipt_evidence?: Json | null
           result_url?: string | null
@@ -240,13 +337,17 @@ export type Database = {
           approved_at?: string | null
           approved_payload?: Json | null
           attempt_count?: number
+          challenge_cost_cents?: number
           consent_granted_at?: string | null
           created_at?: string
           directory_id?: string
           error_message?: string | null
           id?: string
+          inbox_address?: string | null
+          live_check_deadline?: string | null
           live_checked_at?: string | null
           next_attempt_at?: string | null
+          next_live_check_at?: string | null
           obligation_confirmed_at?: string | null
           receipt_evidence?: Json | null
           result_url?: string | null
@@ -310,8 +411,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      approve_targets: {
-        Args: { p_app_id: string; p_targets: Json; p_reviewed_contact_email: string }
+      publish_product: {
+        Args: { p_app_id: string; p_directory_ids?: string[] | null }
         Returns: Database["public"]["Tables"]["submissions"]["Row"][]
       }
       claim_submission_job: {
@@ -344,6 +445,7 @@ export type Database = {
         | "receipt"
         | "unconfirmed"
         | "live"
+        | "not_published"
       submission_method: "api" | "form" | "manual"
       submission_status:
         | "queued"
@@ -354,6 +456,7 @@ export type Database = {
         | "pending_review"
         | "unconfirmed"
         | "live"
+        | "not_published"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -497,6 +600,7 @@ export const Constants = {
         "receipt",
         "unconfirmed",
         "live",
+        "not_published",
       ],
       submission_method: ["api", "form", "manual"],
       submission_status: [
@@ -508,6 +612,7 @@ export const Constants = {
         "pending_review",
         "unconfirmed",
         "live",
+        "not_published",
       ],
     },
   },

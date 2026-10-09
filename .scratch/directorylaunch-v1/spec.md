@@ -1,5 +1,7 @@
 # DirectoryLaunch v1
 
+> **Superseded** by `.scratch/directorylaunch-v2/spec.md` (2026-10-09). Kept for history.
+
 ## Goal
 
 Help a solo SaaS founder submit accurate product details to curated, free directory targets and know what happened at each one. DirectoryLaunch is a working name; `xxx.com` and `app.xxx.com` are placeholder marketing and application hosts.

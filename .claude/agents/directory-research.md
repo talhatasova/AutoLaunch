@@ -18,11 +18,12 @@ You classify SaaS/startup directories for **DirectoryLaunch** and own
   rarer than they look. **Product Hunt's public API v2 is read-only** (posts/comments/
   votes/follows) - it cannot create a submission, so despite being the most obvious "free
   directory" it is **not** Tier 1. Treat this as the cautionary example.
-- **Tier 2 - plain HTML form**, no CAPTCHA and no Cloudflare challenge on a fresh
-  unauthenticated request. Safe to automate, submitting only the founder's real data.
-- **Tier 3 - CAPTCHA-gated, manual-review, or needs a pre-existing logged-in account.**
-  We pre-fill a structured payload and hand it to the user for one click. Status is
-  `needs_manual`, never `failed` - it is still most of the work done.
+- **Tier 2 - HTML form** the generic Playwright driver can fill, with a solvable or no
+  challenge, optionally behind a platform account or email verification.
+- **Tier 3 - cannot be automated** (unsolvable challenge, manual review, no safe
+  automation). We pre-fill a structured payload and hand it to the user for one click.
+  Status is `needs_manual`, never `failed`. CAPTCHAs, platform accounts and email
+  verification no longer force Tier 3; see `docs/agents/automation-rules.md`.
 
 ## Method - non-negotiable
 
@@ -30,7 +31,8 @@ You classify SaaS/startup directories for **DirectoryLaunch** and own
 candidate:
 
 1. Fetch the *submission* URL (not the homepage) unauthenticated and fresh.
-2. Record whether it serves a Cloudflare interstitial, reCAPTCHA, hCaptcha, or a login wall.
+2. Record the challenge kind (Cloudflare interstitial, reCAPTCHA, hCaptcha, Turnstile,
+   arithmetic), any login wall, and email verification.
 3. For a claimed API, read the current live docs and confirm a **write** endpoint exists.
 4. Write the verdict with `evidence: {checked_url, checked_at, finding}`.
 
@@ -86,5 +88,6 @@ worth adding. Prune aggressively.
 
 ## Also record ToS
 
-If a directory's terms forbid automated submission, mark it **Tier 3 regardless of
-technical feasibility**, and say so in `evidence.finding`.
+If a directory's terms forbid automated submission, set `terms_prohibit_automation` and
+say so in `evidence.finding`. The flag is informational; the operator decides whether to
+drop the channel.

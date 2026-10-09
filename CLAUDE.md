@@ -1,41 +1,63 @@
 # DirectoryLaunch
 
-DirectoryLaunch helps SaaS founders find suitable listing directories, submit product details, track each attempt through publication, and analyze the results. `https://xxx.com` is the marketing site and `https://app.xxx.com` is the application; `xxx` is a placeholder until a domain is chosen.
+DirectoryLaunch lets a SaaS founder click Publish once and have the product submitted to free launch channels (directories, social feeds) by automation, then tracks each channel from receipt to live listing. Marketing site and app are separate hosts (`xxx` is a placeholder domain).
 
-## Architecture direction
+## Architecture
 
-- Railway hosts the services. FastAPI owns the application API, React owns the web interface, and a Playwright worker handles verified form submissions.
-- Supabase provides Postgres and authentication. Treat directory websites and user supplied URLs as untrusted inputs.
-- Founder approval writes a payload snapshot and a Postgres job in one transaction. The worker claims each job once; ambiguous sends require investigation before retry.
-- Keep marketing and application entry points separate. Record submission receipt, review, and live publication as distinct outcomes. Recheck automatic integrations every seven days.
-- Candidate directories stay research only until five free targets pass live end-to-end certification for release. The current seed certifies none.
-- Prefer small modules with one clear responsibility and explicit boundaries. Apply SOLID when it removes coupling; use the simplest design that satisfies the current behavior.
+- Railway runs four services: marketing, web (React app), API (FastAPI), worker (Node + Playwright). Supabase provides Postgres and Auth.
+- Publish writes a payload snapshot and a Postgres job in one transaction; the worker claims it once and never reclaims a crashed job.
+- Receipt, review, and live are distinct outcomes. Candidate channels stay research until five free channels pass live certification.
+- Treat directory sites and user-supplied URLs as untrusted input.
+- Tests: unit and E2E tests are deferred during development; typecheck must pass. Live certification of channels with a real submission is the release gate.
+- Prefer small modules with one responsibility; use the simplest design that satisfies the behavior.
 
-## Skill map
+## Read before working
 
-| Situation | Skills to use |
+| When you are... | Read |
 | --- | --- |
-| Set up repo conventions and issue tracking | `setup-matt-pocock-skills` |
-| Stress test product scope and settle domain terms | `grill-with-docs` (`grilling`, `domain-modeling`) |
-| Turn an agreed plan into work | `to-tickets`; then `implement`, `tdd` at useful seams, and `code-review` |
-| Design or change REST endpoints | `ecc:api-design`; use `ecc:error-handling` for failure contracts |
-| Build or review FastAPI code | `ecc:fastapi-patterns`, `ecc:python-patterns`; keep schema changes in migrations |
-| Change Supabase schema, auth, RLS, or queries | `supabase`, `supabase-postgres-best-practices`; use `ecc:database-migrations` for migration review |
-| Build React screens or marketing pages | `design-taste-frontend`, `ecc:frontend-design-direction`, `ecc:react-patterns` |
-| Build or repair browser submission flows | `playwright`, `ecc:e2e-testing`; use `diagnosing-bugs` for failures |
-| Make implementation choices | `ponytail`: inspect existing code, reuse native features, keep the smallest working change |
-| Edit this file or agent guidance | `writing-for-agents` |
+| Touching worker automation, CAPTCHAs, accounts, inbox, live detection | `docs/agents/automation-rules.md` |
+| Writing any database code or migration | `docs/agents/database-access.md` |
+| Adding or reading logs, request ids, submission events, debugging a user report | `docs/agents/logging.md` |
+| Deploying or changing Railway services | `docs/deployment.md` |
+| Making marketing assets or copy for DirectoryLaunch | `docs/agents/marketing.md` |
+| Creating or moving tickets | `docs/agents/issue-tracker.md`, `docs/agents/triage-labels.md` |
+| Changing domain behavior or naming | `docs/agents/domain.md` (then `CONTEXT-MAP.md`, `docs/adr/`) |
+| Current product decisions | `.scratch/directorylaunch-v2/spec.md` |
 
-## Agent skills
+## Skills
 
-### Issue tracker
+| Situation | Skills |
+| --- | --- |
+| Stress-test scope, settle domain terms | `mattpocock-skills:grilling`, `mattpocock-skills:domain-modeling` |
+| Turn a plan into a spec or tickets | `to-spec` |
+| Implement, review, debug | `mattpocock-skills:tdd` (when tests are in scope), `mattpocock-skills:code-review`, `mattpocock-skills:diagnosing-bugs` |
+| Module design, throwaway experiments, research | `mattpocock-skills:codebase-design`, `mattpocock-skills:prototype`, `mattpocock-skills:research` |
+| Smallest-change choices | `ponytail:ponytail`; audit with `ponytail:ponytail-review` |
+| REST endpoints and errors | `ecc:api-design`, `ecc:error-handling` |
+| FastAPI / Python | `ecc:fastapi-patterns`, `ecc:python-patterns` |
+| Supabase schema, auth, RLS, queries | `supabase`, `supabase-postgres-best-practices`, `ecc:postgres-patterns`, `ecc:database-migrations` |
+| React screens | `ecc:react-patterns`, `ecc:frontend-design-direction`, `frontend-design:frontend-design`, `ui-ux-pro-max`, `shadcn`, `ecc:make-interfaces-feel-better` |
+| Dashboard charts | `dataviz` |
+| Browser submission flows and QA | `ecc:e2e-testing`, `ecc:browser-qa` |
+| Security review | `ecc:security-review`, `security-review` |
+| Railway, Docker, deploy | `railway:use-railway`, `ecc:deployment-patterns`, `ecc:docker-patterns` |
+| Anthropic SDK (launch text generation) | `claude-api` |
+| UI and marketing screen design | Stitch MCP (`mcp__stitch__*`), `design:design-critique` |
+| Videos | `remotion:remotion-best-practices`, `remotion:remotion-saas`, `remotion:remotion-create` |
+| Marketing copy, SEO, voice | `ecc:marketing-campaign`, `ecc:seo`, `searchfit-seo:seo-audit`, `ecc:brand-voice` |
+| Editing this file or agent docs | `mattpocock-skills:writing-for-agents` |
 
-Implementation tickets live as local Markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
+## Subagents (`.claude/agents/`)
 
-### Triage labels
+The main session orchestrates and keeps its context small. Dispatch Sonnet for well-scoped work and Opus for complex or cross-cutting work. Give agents disjoint folders, or a worktree when they both touch dependencies.
 
-Use the five standard Matt Pocock triage states. See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-This monorepo uses separate context glossaries linked from `CONTEXT-MAP.md`. See `docs/agents/domain.md`.
+| Agent | Dispatch for |
+| --- | --- |
+| `architect` | Cross-cutting design, ADRs, shared contracts, build order |
+| `backend` | FastAPI routes in `apps/api`, metadata scraping, SSRF guard, publish |
+| `database` | Migrations, RLS, schema |
+| `automation-pipeline` | `apps/worker`: drivers, solver, inbox, live detector |
+| `directory-research` | Classifying and re-verifying channels in the catalog |
+| `frontend` | `apps/web` and `apps/marketing` UI |
+| `qa` | Tests, once the product settles; certification evidence |
+| `security` | Review before deploy and after auth, input, or DB changes |

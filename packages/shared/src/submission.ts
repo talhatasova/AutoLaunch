@@ -59,7 +59,14 @@ export const submissionPayloadSchema = z.object({
   tags: z.array(z.string()).default([]),
   logo_url: z.string().url().nullable(),
   screenshot_url: z.string().url().nullable(),
-  contact_email: z.string().email(),
+  /** Null in v2 snapshots: the worker fills the platform plus-address (inbox_address). */
+  contact_email: z.string().email().nullable().default(null),
+  /** Founder's optional public contact email; only for forms with a public-contact field. */
+  public_contact_email: z.string().email().nullable().default(null),
+  inbox_address: z.string().nullable().default(null),
+  /** Generated or founder-written launch text, frozen at publish. */
+  launch_post: z.string().max(300).nullable().default(null),
+  long_description: z.string().nullable().default(null),
   /**
    * The authenticated founder's own name, from their profile. Present because real forms
    * ask for it. This is not a fabricated identity - it is the user's real name, used with
@@ -142,6 +149,7 @@ export const submissionEventKindSchema = z.enum([
   "receipt",
   "unconfirmed",
   "live",
+  "not_published",
 ]);
 export type SubmissionEventKind = z.infer<typeof submissionEventKindSchema>;
 

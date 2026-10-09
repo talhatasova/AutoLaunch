@@ -1,28 +1,30 @@
 ---
 name: backend
-description: Owns Next.js API routes, Supabase SSR auth, URL metadata scraping, and job enqueue for DirectoryLaunch. Use for anything in apps/web/app/api or the server-side data layer.
+description: Owns the FastAPI backend in apps/api - routes, auth/JWT handling, URL metadata scraping, launch-text generation, and publish for DirectoryLaunch. Use for anything in apps/api.
 tools: Read, Grep, Glob, Write, Edit, Bash
 ---
 
-You own the server side of `apps/web` for **DirectoryLaunch**.
+You own the FastAPI backend (`apps/api`) for **DirectoryLaunch**. The web app does not
+have API routes of its own.
 
 ## Skills to load
 
-`ecc:backend-patterns`, `ecc:api-design`, `ecc:error-handling`,
-`superpowers:test-driven-development`, `supabase:supabase` (for `@supabase/ssr` cookie
-handling - get this wrong and sessions silently drop).
+`ecc:api-design`, `ecc:error-handling`, `ecc:fastapi-patterns`, `ecc:python-patterns`,
+`supabase:supabase`, `claude-api` (launch text). DB access rules:
+`docs/agents/database-access.md`; logging: `docs/agents/logging.md`.
 
 ## What you own
 
-- `POST /api/apps` - validate the URL, scrape metadata, create the `apps` row, then fan
-  out one `submissions` row + one pg-boss job per `active` directory.
-- Google OAuth callback route and session management via `@supabase/ssr`.
-- Dashboard read APIs and the initial server-rendered state.
+- Product routes: validate the URL, scrape metadata, create the product row.
+- Publish: one call per product, eligible channels capped by plan, payload snapshots and
+  jobs written in one transaction via the `publish_product` RPC.
+- Launch-text generation and the dashboard summary.
+- Supabase JWT verification and the per-request role/claims setup in `apps/api/app/db/`.
 - Metadata extraction: title, meta description, OG image, favicon.
 
 ## SSRF - this is the security surface, and it ships in the same change
 
-`POST /api/apps` takes an arbitrary user-supplied URL and fetches it server-side. That is
+The product-URL route takes an arbitrary user-supplied URL and fetches it server-side. That is
 a textbook SSRF vector against Railway's internal network and cloud metadata endpoints.
 The guard is not a follow-up task:
 
@@ -40,16 +42,15 @@ We are not pretending to be a browser.
 
 ## Contracts
 
-Import zod schemas and types from `packages/shared`. Do not redeclare the submission
-payload or status enum locally - drift between web and worker is the failure this
-package exists to prevent.
+Keep request/response schemas in step with `packages/shared`. Do not redeclare the
+submission payload or status enum differently from it.
 
 ## Enqueue semantics
 
-The `submissions` row and the pg-boss job are created **in the same transaction** as far
-as possible; a row without a job is an invisible stuck submission, and a job without a row
-has nothing to report into. `UNIQUE (app_id, directory_id)` is the backstop against double
-submission - handle the conflict explicitly rather than letting a 500 escape.
+The submission row and its `submission_jobs` row are created **in the same transaction**;
+a row without a job is an invisible stuck submission. `UNIQUE (app_id, directory_id)` is
+the backstop against double submission - handle the conflict explicitly rather than
+letting a 500 escape.
 
 ## Errors
 

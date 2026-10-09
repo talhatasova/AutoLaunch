@@ -10,6 +10,7 @@ import {
   outcomeForHttpStatus,
 } from "../errors";
 import { resolvePayloadValue } from "../payload/values";
+import { solveChallenge } from "../challenge/solver";
 import { detectChallenge } from "./challenge";
 import { consentDecision } from "./consent";
 import { parseFormSchema } from "./form-schema";
@@ -231,12 +232,10 @@ export function preflightGates(
   // A directory flagged requires_captcha should never reach a Tier 2 driver, but if the
   // catalog says there is a challenge we believe it and stop rather than "just checking".
   if (directory.requires_captcha) {
-    return {
-      kind: "challenge_detected",
-      detail:
-        `${directory.name} is recorded as CAPTCHA-protected. We do not attempt automated ` +
-        `submission behind a challenge.`,
-    };
+    const solved = solveChallenge(directory.challenge_kind ?? "unknown");
+    if (!solved.ok) {
+      return { kind: "challenge_detected", detail: `${directory.name} is CAPTCHA-protected. ${solved.reason}` };
+    }
   }
 
   // Unmet profile requirements are needs_manual, NOT a failure. Nothing is broken - the

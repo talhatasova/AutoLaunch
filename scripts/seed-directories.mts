@@ -80,6 +80,14 @@ const rows = parsed.data.map((d) => ({
   price_checked_at: d.price_checked_at,
   obligation: d.obligation,
   terms_url: d.terms_url,
+  channel_type: d.channel_type,
+  automation: d.automation,
+  terms_prohibit_automation: d.terms_prohibit_automation,
+  challenge_kind: d.challenge_kind,
+  needs_platform_account: d.needs_platform_account,
+  needs_email_verification: d.needs_email_verification,
+  live_lookup: d.live_lookup,
+  recipe: d.recipe,
 }));
 
 if (rows.length === 0) {

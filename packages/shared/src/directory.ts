@@ -84,6 +84,51 @@ export const evidenceSchema = z.object({
   finding: z.string().min(1),
 });
 
+export const channelTypeSchema = z.enum(["directory", "social", "article", "list"]);
+export type ChannelType = z.infer<typeof channelTypeSchema>;
+
+/** automated = no founder action after Publish; manual = copy kit; paid_link = price + link out. */
+export const automationSchema = z.enum(["automated", "manual", "paid_link"]);
+export type Automation = z.infer<typeof automationSchema>;
+
+export const challengeKindSchema = z.enum([
+  "none",
+  "arithmetic",
+  "recaptcha_v2",
+  "recaptcha_v3",
+  "hcaptcha",
+  "turnstile",
+]);
+export type ChallengeKind = z.infer<typeof challengeKindSchema>;
+
+export const liveLookupSchema = z.object({
+  kind: z.enum(["url_pattern", "site_search", "none"]),
+  template: z.string().optional(),
+});
+export type LiveLookup = z.infer<typeof liveLookupSchema>;
+
+export const planSchema = z.enum(["free", "pro"]);
+export type Plan = z.infer<typeof planSchema>;
+
+/** Mirrors public.directory_eligible(): the v2 gate for Publish. */
+export function isEligible(
+  d: {
+    automation: Automation;
+    status: string;
+    automation_verified_at: string | null;
+    last_verified_at: string | null;
+  },
+  now: Date = new Date(),
+): boolean {
+  return (
+    d.automation === "automated" &&
+    d.status === "active" &&
+    d.automation_verified_at !== null &&
+    d.last_verified_at !== null &&
+    new Date(d.last_verified_at).getTime() > now.getTime() - 7 * 24 * 3600 * 1000
+  );
+}
+
 export const directorySchema = z.object({
   slug: z.string().min(1),
   name: z.string().min(1),
@@ -115,6 +160,15 @@ export const directorySchema = z.object({
   price_checked_at: z.string().datetime().nullable().default(null),
   obligation: z.string().nullable().default(null),
   terms_url: z.string().url().nullable().default(null),
+  channel_type: channelTypeSchema.default("directory"),
+  automation: automationSchema.default("manual"),
+  terms_prohibit_automation: z.boolean().default(false),
+  challenge_kind: challengeKindSchema.default("none"),
+  needs_platform_account: z.boolean().default(false),
+  needs_email_verification: z.boolean().default(false),
+  live_lookup: liveLookupSchema.nullable().default(null),
+  /** Driver recipe; the worker owns its shape. */
+  recipe: z.record(z.unknown()).nullable().default(null),
 });
 export type Directory = z.infer<typeof directorySchema>;
 
@@ -133,11 +187,8 @@ export const seedDirectorySchema = directorySchema.superRefine((d, ctx) => {
   if (d.tier === 3 && (d.api_config || d.form_schema)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${d.slug}: tier 3 must not carry an automation config` });
   }
-  if (d.requires_captcha && d.tier !== 3) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: `${d.slug}: requires_captcha implies tier 3 - we never automate past a challenge`,
-    });
+  if (d.automation === "paid_link" && d.price_kind !== "paid") {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${d.slug}: paid_link requires price_kind paid` });
   }
 });
 

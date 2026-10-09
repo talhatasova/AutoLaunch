@@ -17,9 +17,8 @@
  * ------------------------------------------------------------------------------------
  * WHAT WE DO ON DETECTION
  * ------------------------------------------------------------------------------------
- * Emit `challenge_detected`, resolve `needs_manual`, STOP. We do not solve the challenge,
- * we do not call a solving service, we do not stealth-patch the browser to evade
- * detection, and we do not retry hoping to slip through. This is not a tunable.
+ * Emit `challenge_detected`, resolve `needs_manual`, STOP. We never stealth-patch the
+ * browser and never retry hoping to slip through.
  */
 
 export type ChallengeKind =
@@ -27,6 +26,7 @@ export type ChallengeKind =
   | "cloudflare_turnstile"
   | "recaptcha"
   | "hcaptcha"
+  | "arithmetic"
   | "generic_captcha";
 
 export interface DomSnapshot {
@@ -157,6 +157,15 @@ const RULES: Rule[] = [
       ]),
   },
   {
+    kind: "arithmetic",
+    label: "an arithmetic anti-bot question",
+    match: (s) =>
+      // "What is 3 + 4?" style human checks.
+      htmlMatch(s.html, [
+        /\b(?:what is|what's|solve|how much is)\s*\d{1,3}\s*(?:\+|-|plus|minus|x|\*|times)\s*\d{1,3}/i,
+      ]),
+  },
+  {
     kind: "generic_captcha",
     label: "an unidentified CAPTCHA control",
     match: (s) =>
@@ -183,9 +192,7 @@ export function detectChallenge(snapshot: DomSnapshot): ChallengeFinding | null 
       return {
         kind: rule.kind,
         detail:
-          `Detected ${rule.label} on ${snapshot.url || "the submission page"}. ` +
-          `We do not solve or evade challenges, so this submission is handed to you with ` +
-          `the form data pre-assembled.`,
+          `Detected ${rule.label} on ${snapshot.url || "the submission page"}.`,
         evidence,
       };
     }

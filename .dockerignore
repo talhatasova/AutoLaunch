@@ -10,3 +10,9 @@ node_modules
 .scratch
 **/.scratch
 supabase/.temp
+**/out
+client_secret_*.json
+**/.env*
+!**/.env.example
+.claude
+.claude/

@@ -2,8 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { MotionProvider } from "@/components/site/motion-provider";
-import { SiteNav } from "@/components/site/nav";
-import { SiteFooter } from "@/components/site/footer";
+import { AppNav } from "@/components/site/nav";
 import "./globals.css";
 
 /**
@@ -33,7 +32,7 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "DirectoryLaunch — we submit your SaaS to the directories",
+    default: "DirectoryLaunch app",
     template: "%s — DirectoryLaunch",
   },
   description:
@@ -60,9 +59,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
         <MotionProvider>
-          <SiteNav />
+          <AppNav />
           <div id="main">{children}</div>
-          <SiteFooter />
         </MotionProvider>
         <Toaster
           position="bottom-right"

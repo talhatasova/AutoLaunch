@@ -38,18 +38,16 @@ const dirs = parsed.data;
 const byTier = { 1: 0, 2: 0, 3: 0 } as Record<1 | 2 | 3, number>;
 for (const d of dirs) byTier[d.tier]++;
 
-// A directory marked as needing a CAPTCHA that is not tier 3 would mean we intend to
-// automate past a challenge. The schema blocks it; assert again here so the guarantee is
-// visible in output rather than buried in a refinement.
-const violations = dirs.filter((d) => d.requires_captcha && d.tier !== 3);
-if (violations.length > 0) {
-  console.error(`CAPTCHA-gated directories not marked tier 3: ${violations.map((d) => d.slug).join(", ")}`);
-  process.exit(1);
-}
+// v2: captcha channels may be automated through a solver, so there is no captcha/tier rule.
+// The seed never carries automation_verified_at; certification is DB-only evidence.
+const byAutomation = { automated: 0, manual: 0, paid_link: 0 } as Record<string, number>;
+for (const d of dirs) byAutomation[d.automation]++;
 
 console.log(`seed/directories.json OK - ${dirs.length} directories`);
 console.log(`  Tier 1 (API):    ${byTier[1]}`);
 console.log(`  Tier 2 (form):   ${byTier[2]}`);
 console.log(`  Tier 3 (manual): ${byTier[3]}`);
-console.log(`  Automation candidates, pending certification: ${byTier[1] + byTier[2]}`);
+console.log(`  Automated (uncertified): ${byAutomation.automated}`);
+console.log(`  Manual:                  ${byAutomation.manual}`);
+console.log(`  Paid link:               ${byAutomation.paid_link}`);
 console.log("  Certified selectable targets: 0 (certification is stored separately)");

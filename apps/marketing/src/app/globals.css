@@ -1,0 +1,413 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   DirectoryLaunch design system - "Dispatch v2"
+   ----------------------------------------------------------------------------
+   Structure derived from the token cascade published by sstr.tech (Awwwards
+   Site of the Day, 16 Aug 2026 - Dmitry Golub). Four things are taken from it
+   as STRUCTURE, not as content:
+
+     1. The cascade itself: brand (primitives) -> alias -> role -> type -> layout.
+        Components only ever touch role tokens, so a repaint is one edit.
+     2. Section-level theming via a data attribute. A section flips the six role
+        tokens and everything inside it inverts. This is what stops a long page
+        from reading as one static slab.
+     3. Fluid em scaling. The root font-size tracks the viewport, so every
+        em-based space and type size scales as one system instead of via a
+        dozen unrelated breakpoints.
+     4. The clip-path sweep as the signature interaction, on their easing
+        cubic-bezier(0.675, 0.15, 0.1, 1).
+
+   Nothing else is borrowed. Palette, type, copy and layout are ours. There is
+   no gradient anywhere in this file, and nothing is purple.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   BRAND - primitives. Never referenced by a component directly.
+   ------------------------------------------------------------------------ */
+:root {
+  /* Signal orange. Hue is reserved for the machine: orange means "working". */
+  --brand-signal-100: #ffd9cb;
+  --brand-signal-300: #ff9670;
+  --brand-signal-500: #f4531d;
+  --brand-signal-600: #d8430f;
+  --brand-signal-800: #7d2d14;
+
+  /* Concrete ramp. Cool, not cream at the top and not pure black at the base -
+     #0c0d0f still reads as a material under a screen's black. */
+  --brand-grey-050: #f6f6f3;
+  --brand-grey-100: #edede9;
+  --brand-grey-150: #e3e3dd;
+  --brand-grey-200: #cfcfc8;
+  --brand-grey-300: #b4b4ab;
+  --brand-grey-400: #9aa0a6;
+  --brand-grey-500: #767c84;
+  --brand-grey-600: #5a6068;
+  --brand-grey-700: #2c3036;
+  --brand-grey-800: #1a1d21;
+  --brand-grey-850: #131619;
+  --brand-grey-900: #0c0d0f;
+
+  /* Fluid root. Anchored so 1em is about 16px at 1440, and clamped either side.
+     The rem term keeps a user's own browser font-size in the calculation - a
+     pure vw formula would silently discard it. */
+  font-size: clamp(0.875rem, 0.55rem + 0.55vw, 1.1875rem);
+}
+
+/* ---------------------------------------------------------------------------
+   ROLE - the only tokens a component may use. Ten of them are re-mapped by
+   the dark theme below; everything else is theme-invariant on purpose.
+   ------------------------------------------------------------------------ */
+:root {
+  --surface-page: var(--brand-grey-100);
+  --surface-raised: var(--brand-grey-050);
+  --surface-sunk: var(--brand-grey-150);
+  --text-heading: var(--brand-grey-900);
+  --text-body: var(--brand-grey-700);
+  --text-muted: var(--brand-grey-500);
+  --text-faint: var(--brand-grey-400);
+  --border-default: var(--brand-grey-200);
+  --border-strong: var(--brand-grey-300);
+  --border-heavy: var(--brand-grey-900);
+
+  /* Accent roles. Text on signal is always ink: black on #f4531d clears 4.5:1,
+     white does not. */
+  --accent: var(--brand-signal-500);
+  --accent-sunk: var(--brand-signal-600);
+  --accent-on: var(--brand-grey-900);
+  --danger: var(--brand-signal-800);
+}
+
+[data-theme="dark"] {
+  --surface-page: var(--brand-grey-900);
+  --surface-raised: var(--brand-grey-800);
+  --surface-sunk: var(--brand-grey-850);
+  --text-heading: var(--brand-grey-050);
+  --text-body: var(--brand-grey-300);
+  --text-muted: var(--brand-grey-500);
+  --text-faint: var(--brand-grey-600);
+  --border-default: var(--brand-grey-700);
+  --border-strong: var(--brand-grey-600);
+  --border-heavy: var(--brand-grey-050);
+  --danger: var(--brand-signal-300);
+}
+
+@theme {
+  /* Legacy palette names, kept so the dashboard keeps compiling. These are
+     fixed-light values; anything that must invert uses a role utility below. */
+  --color-paper: #edede9;
+  --color-paper-sunk: #e3e3dd;
+  --color-paper-raised: #f6f6f3;
+  --color-ink: #0c0d0f;
+  --color-ink-700: #2c3036;
+  --color-ink-500: #767c84;
+  --color-ink-400: #9aa0a6;
+  --color-ink-300: #b4b4ab;
+  --color-rule: #cfcfc8;
+  --color-rule-strong: #b4b4ab;
+  --color-signal: #f4531d;
+  --color-signal-sunk: #d8430f;
+  --color-void: #7d2d14;
+
+  /* -- Type ---------------------------------------------------------------- */
+  /* Space Grotesk stands in for ABC Monument Grotesk, which is licensed. It is
+     the nearest free face in the same register: a neo-grotesk skeleton carrying
+     real quirks (the single-storey g, the cut t, the flat-sided a) rather than
+     the anonymous Helvetica-derived shapes of the previous stack. */
+  --font-display: var(--font-grotesk), "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-grotesk), "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-mono-stack), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* -- Motion -------------------------------------------------------------- */
+  /* `sweep` is SSTR's own curve: a long flat tail that makes a clip-path wipe
+     read as one decisive gesture instead of a slide. */
+  --ease-sweep: cubic-bezier(0.675, 0.15, 0.1, 1);
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-soft: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-instant: 120ms;
+  --duration-state: 180ms;
+  --duration-shift: 240ms;
+  --duration-sweep: 375ms;
+
+  --radius-edge: 2px;
+  --spacing-gutter: 1.5rem;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--surface-page);
+    color: var(--text-body);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.55;
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    /* The page background is the one thing that must cross-fade when a dark
+       section owns the viewport, so the browser gutter never flashes. */
+    transition: background-color 500ms var(--ease-soft), color 500ms var(--ease-soft);
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-on);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  table,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   ROLE UTILITIES
+   Tailwind inlines @theme values at :root, so a `bg-*` utility pointing at a
+   role token would freeze at its light value and never invert. These read the
+   role token at the point of use instead, which is what makes data-theme work.
+   ------------------------------------------------------------------------ */
+@layer utilities {
+  .surface-page { background-color: var(--surface-page); }
+  .surface-raised { background-color: var(--surface-raised); }
+  .surface-sunk { background-color: var(--surface-sunk); }
+  .surface-accent { background-color: var(--accent); color: var(--accent-on); }
+
+  .fg-heading { color: var(--text-heading); }
+  .fg-body { color: var(--text-body); }
+  .fg-muted { color: var(--text-muted); }
+  .fg-faint { color: var(--text-faint); }
+  .fg-accent { color: var(--accent); }
+  .fg-danger { color: var(--danger); }
+
+  .edge-t { border-top: 1px solid var(--border-default); }
+  .edge-b { border-bottom: 1px solid var(--border-default); }
+  .edge-l { border-left: 1px solid var(--border-default); }
+  .edge-heavy-t { border-top: 2px solid var(--border-heavy); }
+  .edge-strong { border-color: var(--border-strong); }
+}
+
+@layer components {
+  /* -- Type roles ---------------------------------------------------------- */
+  /* Leading is deliberately below 1 on the display sizes. Tight leading is what
+     turns a headline into a block of texture rather than three separate lines,
+     and it is the single strongest signal that type was set rather than typed. */
+
+  .t-display {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.045em;
+    line-height: 0.86;
+    text-transform: uppercase;
+  }
+
+  .t-display-sm {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 0.92;
+    text-transform: uppercase;
+  }
+
+  .t-head {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.08;
+  }
+
+  .t-meta {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1.2;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .t-micro {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .t-data {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* -- Structure ----------------------------------------------------------- */
+  .shell {
+    width: 100%;
+    max-width: 92rem;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .shell {
+      padding-inline: 2.5rem;
+    }
+  }
+
+  /* Kept for the dashboard's marginalia, which always carries a real count or
+     index. It is no longer used as an eyebrow above a heading - a label that
+     only restates the heading beneath it is noise. */
+  .gutter-label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .rule-t { border-top: 1px solid var(--border-default); }
+  .rule-b { border-bottom: 1px solid var(--border-default); }
+
+  /* -- The sweep ----------------------------------------------------------- */
+  /* A fill that wipes in from the bottom edge and out through the top, so the
+     pointer's direction of travel is answered by the surface. clip-path is
+     composited, so this costs nothing on the main thread. */
+  .sweep {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+
+  .sweep::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-color: var(--sweep-fill, var(--accent));
+    clip-path: inset(100% 0 0 0);
+    transition: clip-path var(--duration-sweep) var(--ease-sweep);
+  }
+
+  .sweep:hover::before,
+  .sweep:focus-visible::before {
+    clip-path: inset(0 0 0 0);
+  }
+
+  /* -- Line masking -------------------------------------------------------- */
+  /* The mask a headline line rises out of. Overflow-hidden on a parent whose
+     height is exactly one line, so the glyph is revealed rather than faded. */
+  .line-mask {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.08em;
+    margin-bottom: -0.08em;
+  }
+}
+
+@layer utilities {
+  .state-transition {
+    transition-property: transform, opacity, background-color, color, border-color;
+    transition-duration: var(--duration-state);
+    transition-timing-function: var(--ease-enter);
+  }
+
+  .state-transition-exit {
+    transition-timing-function: var(--ease-exit);
+  }
+
+  @keyframes dl-scan {
+    0% { transform: translate3d(-100%, 0, 0); }
+    100% { transform: translate3d(100%, 0, 0); }
+  }
+
+  .scanline {
+    animation: dl-scan 1150ms cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    will-change: transform;
+  }
+
+  @keyframes dl-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  .pulse-mark {
+    animation: dl-pulse 1400ms cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Marquee. Duplicated content plus a -50% translate, so the seam never
+     appears. Transform-only and therefore compositor-driven. */
+  @keyframes dl-marquee {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(-50%, 0, 0); }
+  }
+
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: dl-marquee var(--marquee-duration, 42s) linear infinite;
+    will-change: transform;
+  }
+
+  .marquee-host:hover .marquee-track {
+    animation-play-state: paused;
+  }
+
+  .mark-transition {
+    transition-property: transform;
+    transition-duration: var(--duration-state);
+    transition-timing-function: var(--ease-enter);
+  }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+}
+
+/* Reduced motion: states still change, they just stop travelling to get there.
+   Nothing is disabled outright, because the status changes ARE the product. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  .scanline,
+  .pulse-mark,
+  .marquee-track {
+    animation: none !important;
+  }
+
+  .state-transition {
+    transition-property: opacity, background-color, color, border-color;
+    transition-duration: 150ms;
+  }
+
+  .mark-transition {
+    transition-property: opacity;
+    transition-duration: 150ms;
+  }
+
+  /* The sweep still fills, it just arrives rather than travelling. */
+  .sweep::before {
+    transition-property: opacity;
+    transition-duration: 150ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

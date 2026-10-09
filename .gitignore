@@ -23,3 +23,5 @@ __pycache__/
 supabase/.temp/
 apps/worker/.scratch/
 npm-debug.log*
+*.egg-info/
+.claude/worktrees/

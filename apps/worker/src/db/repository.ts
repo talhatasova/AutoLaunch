@@ -1,139 +1,123 @@
-import type { Directory, SubmissionStatus } from "@directorylaunch/shared";
-import type { ServiceClient } from "./client";
-import {
-  appRowSchema,
-  directoryRowSchema,
-  parseRow,
-  submissionRowSchema,
-} from "./rows";
-import type { AppRow, DirectoryRow, SubmissionRow } from "./rows";
-import type { ConsentGrant } from "../drivers/types";
+import type { Directory } from "@directorylaunch/shared";
+import { and, eq, inArray, isNotNull, lte, sql } from "drizzle-orm";
 import { parseFormSchema } from "../drivers/form-schema";
+import type { Db } from "./client";
+import {
+  apps, directories, platformAccounts, submissionEvents, submissionJobs, submissions,
+} from "./schema";
+import type { DirectoryRow, EventKind, SubmissionPatch, SubmissionRow } from "./schema";
+
+/** The worker's whole data-access surface. No module outside src/db touches a DB client. */
+export type { Db } from "./client";
+export type { DirectoryRow, EventKind, SubmissionPatch, SubmissionRow } from "./schema";
+
+export type Job = { job_id: string; submission_id: string; app_id: string; directory_id: string };
 
 /**
- * All database access for the worker. Runs under the service role and therefore bypasses
- * RLS - `submissions` grants no UPDATE to any client role, so these transitions can only
- * happen here.
- *
- * Every method surfaces its error. There is no `.catch(() => null)` in this file: a read
- * that silently returns null would make a submission look like a missing row rather than a
- * broken database.
+ * Claims one job through the RPC (FOR UPDATE SKIP LOCKED; a crashed claim is never
+ * reclaimed). The claim marks the transaction service_role so `auth.role()` inside the
+ * security-definer function sees the worker's identity on a direct Postgres connection.
  */
-export class Repository {
-  constructor(private readonly db: ServiceClient) {}
-
-  async loadSubmission(submissionId: string): Promise<SubmissionRow> {
-    const { data, error } = await this.db
-      .from("submissions")
-      .select("*")
-      .eq("id", submissionId)
-      .maybeSingle();
-    if (error) throw new Error(`Failed to load submission ${submissionId}: ${error.message}`);
-    if (!data) throw new Error(`Submission ${submissionId} does not exist.`);
-    return parseRow(submissionRowSchema, data, "submissions");
-  }
-
-  async loadDirectory(directoryId: string): Promise<DirectoryRow> {
-    const { data, error } = await this.db
-      .from("directories")
-      .select("*")
-      .eq("id", directoryId)
-      .maybeSingle();
-    if (error) throw new Error(`Failed to load directory ${directoryId}: ${error.message}`);
-    if (!data) throw new Error(`Directory ${directoryId} does not exist.`);
-    return parseRow(directoryRowSchema, data, "directories");
-  }
-
-  async loadApp(appId: string): Promise<AppRow> {
-    const { data, error } = await this.db
-      .from("apps")
-      .select("id,user_id,url,name,tagline,description,logo_url,screenshot_url")
-      .eq("id", appId)
-      .maybeSingle();
-    if (error) throw new Error(`Failed to load app ${appId}: ${error.message}`);
-    if (!data) throw new Error(`App ${appId} does not exist.`);
-    return parseRow(appRowSchema, data, "apps");
-  }
-
-  /** The founder's own auth record. The single source of their email and name. */
-  async loadAuthUser(userId: string): Promise<{
-    email?: string | null;
-    user_metadata?: Record<string, unknown> | null;
-  }> {
-    const { data, error } = await this.db.auth.admin.getUserById(userId);
-    if (error) throw new Error(`Failed to load auth user ${userId}: ${error.message}`);
-    if (!data.user) throw new Error(`Auth user ${userId} does not exist.`);
-    return { email: data.user.email, user_metadata: data.user.user_metadata ?? {} };
-  }
-
-  async markRunning(submissionId: string, attempt: number): Promise<void> {
-    const { error } = await this.db
-      .from("submissions")
-      .update({ status: "running", attempt_count: attempt, error_message: null })
-      .eq("id", submissionId);
-    if (error) throw new Error(`Failed to mark ${submissionId} running: ${error.message}`);
-  }
-
-  async finalize(
-    submissionId: string,
-    patch: {
-      status: SubmissionStatus;
-      error_message?: string | null;
-      result_url?: string | null;
-      submitted_at?: string | null;
-      next_attempt_at?: string | null;
-      attempt_count?: number;
-    },
-  ): Promise<void> {
-    const { error } = await this.db.from("submissions").update(patch).eq("id", submissionId);
-    if (error) {
-      throw new Error(
-        `Failed to write final status "${patch.status}" for ${submissionId}: ${error.message}`,
-      );
-    }
-  }
-
-  async markSubmittedAt(submissionId: string, when: string): Promise<void> {
-    const { error } = await this.db
-      .from("submissions")
-      .update({ submitted_at: when })
-      .eq("id", submissionId);
-    if (error) {
-      throw new Error(`Failed to set submitted_at for ${submissionId}: ${error.message}`);
-    }
-  }
-
-  /**
-   * A selector that no longer matches means the form changed. The directory goes `broken`
-   * so no other founder's submission is thrown at a form that no longer exists, and the
-   * reason is recorded rather than left to be rediscovered.
-   */
-  async markDirectoryBroken(directoryId: string, reason: string): Promise<void> {
-    const { error } = await this.db
-      .from("directories")
-      .update({ status: "broken" })
-      .eq("id", directoryId);
-    if (error) {
-      throw new Error(`Failed to mark directory ${directoryId} broken: ${error.message}`);
-    }
-    // `directories` has no error_message column; the human-readable reason belongs on the
-    // submission that discovered it and in the operator log. Recorded by the caller.
-    void reason;
-  }
+export async function claimJob(db: Db): Promise<Job | null> {
+  return await db.transaction(async (tx) => {
+    await tx.execute(sql`select set_config('request.jwt.claims', '{"role":"service_role"}', true)`);
+    const rows = await tx.execute<Job>(sql`select * from public.claim_submission_job()`);
+    return rows[0] ?? null;
+  });
 }
 
+export async function loadJob(db: Db, job: Job): Promise<{ submission: SubmissionRow; directory: DirectoryRow }> {
+  const [submission] = await db.select().from(submissions).where(eq(submissions.id, job.submission_id));
+  const [directory] = await db.select().from(directories).where(eq(directories.id, job.directory_id));
+  if (!submission || !directory) throw new Error(`Claimed job ${job.job_id} has missing submission or directory`);
+  return { submission, directory };
+}
+
+export async function recordEvent(
+  db: Db, submissionId: string, kind: EventKind, message: string, payload: Record<string, unknown> | null = null,
+): Promise<void> {
+  await db.insert(submissionEvents).values({ submission_id: submissionId, kind, message, payload });
+}
+
+export async function updateSubmission(db: Db, id: string, patch: SubmissionPatch): Promise<void> {
+  await db.update(submissions).set(patch).where(eq(submissions.id, id));
+}
+
+export async function finishJob(db: Db, jobId: string): Promise<void> {
+  await db.update(submissionJobs).set({ finished_at: new Date() }).where(eq(submissionJobs.id, jobId));
+}
+
+export async function markDirectoryBroken(db: Db, id: string, note: string): Promise<void> {
+  await db.update(directories).set({ status: "broken", automation_check_note: note }).where(eq(directories.id, id));
+}
+
+export async function loadPlatformAccount(db: Db, directoryId: string) {
+  const [row] = await db.select().from(platformAccounts).where(eq(platformAccounts.directory_id, directoryId));
+  return row ?? null;
+}
+
+export async function updatePlatformAccount(
+  db: Db, id: string, patch: { status?: "active" | "locked" | "broken"; session_enc?: string | null },
+): Promise<void> {
+  await db.update(platformAccounts).set({ ...patch, updated_at: new Date() }).where(eq(platformAccounts.id, id));
+}
+
+export const saveSession = (db: Db, id: string, sessionEnc: string) =>
+  updatePlatformAccount(db, id, { session_enc: sessionEnc });
+
+export async function certifiedDirectories(db: Db): Promise<DirectoryRow[]> {
+  return await db.select().from(directories).where(isNotNull(directories.automation_verified_at));
+}
+
+export async function recordRecheck(db: Db, id: string, note: string, broken: boolean): Promise<void> {
+  await db.update(directories).set({
+    automation_checked_at: new Date(), automation_check_note: note, ...(broken ? { status: "broken" as const } : {}),
+  }).where(eq(directories.id, id));
+}
+
+/** Statuses the live detector may move to live / not_published. */
+export const LIVE_CHECK_STATUSES = ["pending_review", "succeeded", "unconfirmed"] as const;
+
+export async function dueLiveChecks(db: Db, now: Date, limit = 25) {
+  return await db.select({
+    id: submissions.id,
+    live_check_deadline: submissions.live_check_deadline,
+    receipt_evidence: submissions.receipt_evidence,
+    // Match against the URL the founder approved, not the live (editable) apps.url.
+    product_url: sql<string>`coalesce(${submissions.approved_payload}->>'url', ${apps.url})`,
+    directory_slug: directories.slug,
+    directory_url: directories.url,
+    live_lookup: directories.live_lookup,
+  }).from(submissions)
+    .innerJoin(apps, eq(apps.id, submissions.app_id))
+    .innerJoin(directories, eq(directories.id, submissions.directory_id))
+    .where(and(inArray(submissions.status, [...LIVE_CHECK_STATUSES]), lte(submissions.next_live_check_at, now)))
+    .limit(limit);
+}
+
+/** Row update and its timeline event commit together; a row that moved on is left alone. */
+export async function settleLiveCheck(
+  db: Db, id: string, patch: SubmissionPatch,
+  event: { kind: EventKind; message: string; payload: Record<string, unknown> } | null,
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    const updated = await tx.update(submissions).set(patch)
+      .where(and(eq(submissions.id, id), inArray(submissions.status, [...LIVE_CHECK_STATUSES])))
+      .returning({ id: submissions.id });
+    if (event && updated.length > 0) await tx.insert(submissionEvents).values({ submission_id: id, ...event });
+  });
+}
+
+const iso = (d: Date | null) => d?.toISOString() ?? null;
+
 /**
- * DirectoryRow -> the shared Directory contract the drivers consume.
- *
- * `requires_consent` falls back to "does the form declare a consent control", which is the
- * definition rather than a guess, so a database missing that column still gates consent
- * correctly. The fallback can only make us more cautious.
+ * DirectoryRow -> the shared Directory contract the drivers consume. `requires_consent`
+ * also honours a consent control declared in the form, which can only make us more cautious.
  */
 export function toDirectory(row: DirectoryRow): Directory {
   const schema = row.form_schema ? parseFormSchema(row.form_schema) : null;
   const declaresConsentControl =
     schema?.ok === true && schema.value.extra_fields.some((f) => f.source === "consent");
-
   return {
     slug: row.slug,
     name: row.name,
@@ -146,31 +130,23 @@ export function toDirectory(row: DirectoryRow): Directory {
     domain_rating: row.domain_rating,
     form_schema: (schema?.ok === true ? schema.value : null) as Directory["form_schema"],
     api_config: (row.api_config ?? null) as Directory["api_config"],
-    requires_consent: row.requires_consent ?? declaresConsentControl,
-    requires_profile_fields: (row.requires_profile_fields ??
-      []) as Directory["requires_profile_fields"],
+    requires_consent: row.requires_consent || declaresConsentControl,
+    requires_profile_fields: row.requires_profile_fields,
     evidence: row.evidence as Directory["evidence"],
     status: row.status,
-    price_kind: row.price_kind ?? "unknown",
-    price_note: row.price_note ?? null,
-    price_source_url: row.price_source_url ?? null,
-    price_checked_at: row.price_checked_at ?? null,
-    obligation: row.obligation ?? null,
-    terms_url: row.terms_url ?? null,
+    price_kind: row.price_kind,
+    price_note: row.price_note,
+    price_source_url: row.price_source_url,
+    price_checked_at: iso(row.price_checked_at),
+    obligation: row.obligation,
+    terms_url: row.terms_url,
+    channel_type: row.channel_type,
+    automation: row.automation,
+    terms_prohibit_automation: row.terms_prohibit_automation,
+    challenge_kind: row.challenge_kind,
+    needs_platform_account: row.needs_platform_account,
+    needs_email_verification: row.needs_email_verification,
+    live_lookup: (row.live_lookup ?? null) as Directory["live_lookup"],
+    recipe: (row.recipe ?? null) as Directory["recipe"],
   };
-}
-
-/**
- * Consent is read from the submission the founder created, never inferred.
- *
- * `consent_granted_at` is written by apps/web at enqueue time when the user ticked that
- * directory's terms box. Absent column or null value both mean "no consent recorded", and
- * the driver then refuses to tick anything.
- */
-export function toConsentGrant(
-  submission: SubmissionRow,
-  directory: Pick<Directory, "slug">,
-): ConsentGrant | null {
-  if (!submission.consent_granted_at) return null;
-  return { directory_slug: directory.slug, granted_at: submission.consent_granted_at };
 }

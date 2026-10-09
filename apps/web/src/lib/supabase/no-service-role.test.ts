@@ -34,28 +34,11 @@ function sourceFiles(dir: string): string[] {
 }
 
 describe("apps/web never touches the service role key", () => {
-  /**
-   * The single audited exception. `submissions` INSERT is revoked from `authenticated`
-   * (migration 0007) so that consent_granted_at cannot be forged by a client, which means
-   * exactly one server path must hold the service role. Widening this list is a security
-   * decision, not a refactor.
-   */
-  const ALLOWED = ["src/lib/supabase/admin.ts"];
-
-  const rel = (f: string) => relative(WEB_ROOT, f).split(sep).join("/");
   const files = sourceFiles(join(WEB_ROOT, "src"))
-    .filter((f) => !f.endsWith("no-service-role.test.ts"))
-    .filter((f) => !ALLOWED.includes(rel(f)));
+    .filter((f) => !f.endsWith("no-service-role.test.ts"));
 
   it("finds source files to check, so a broken glob cannot make this pass vacuously", () => {
     expect(files.length).toBeGreaterThan(10);
-  });
-
-  it("keeps the service role confined to exactly one audited module", () => {
-    // If admin.ts is ever deleted or renamed, this fails rather than silently
-    // leaving ALLOWED pointing at nothing while a new leak goes unnoticed.
-    const all = sourceFiles(join(WEB_ROOT, "src")).map(rel);
-    for (const allowed of ALLOWED) expect(all).toContain(allowed);
   });
 
   it("does not reference SUPABASE_SERVICE_ROLE_KEY anywhere under src/", () => {
@@ -72,13 +55,12 @@ describe("apps/web never touches the service role key", () => {
     expect(offenders.map((f) => relative(WEB_ROOT, f))).toEqual([]);
   });
 
-  it("does not use DATABASE_URL outside the queue module, which needs a session-mode connection", () => {
-    // pg-boss enqueue is the single legitimate direct-Postgres consumer. Any
-    // other use would be an unaudited path around RLS.
+  it("does not use DATABASE_URL at all", () => {
+    // Queueing moved to the API; any direct-Postgres use here is an unaudited path around RLS.
     const offenders = files
       .filter((file) => readFileSync(file, "utf8").includes("DATABASE_URL"))
       .map((f) => relative(WEB_ROOT, f).replace(/\\/g, "/"));
-    expect(offenders).toEqual(["src/lib/queue/boss.ts"]);
+    expect(offenders).toEqual([]);
   });
 
   it("never marks a secret-looking env var as NEXT_PUBLIC_", () => {

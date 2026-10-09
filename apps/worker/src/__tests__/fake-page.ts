@@ -156,6 +156,10 @@ export function samplePayload(overrides: Partial<SubmissionPayload> = {}): Submi
     screenshot_url: "https://acme.example/shot.png",
     // The authenticated founder's own address and name. Never generated.
     contact_email: "dana@acme.example",
+    public_contact_email: null,
+    inbox_address: null,
+    launch_post: null,
+    long_description: null,
     founder_name: "Dana Okafor",
     company_profile: null,
     ...overrides,

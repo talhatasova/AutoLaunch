@@ -64,9 +64,11 @@ statement instead of re-evaluating per row. Index every FK used in an RLS predic
 especially `submissions.app_id` and `submission_events.submission_id`, or the policies
 become sequential scans.
 
-## pg-boss
+## Job queue and ORM mirror
 
-pg-boss creates and manages its own `pgboss` schema - do not hand-write those tables. Do
-confirm the worker's connection string is **session mode** (port 5432 / direct), because
-the transaction pooler on 6543 breaks pg-boss's prepared statements and advisory locks and
-the symptom is jobs that enqueue and never run.
+Jobs live in the Postgres `submission_jobs` table, claimed with `FOR UPDATE SKIP LOCKED`
+(ADR-0002); there is no pg-boss schema. Schema changes land only as SQL migrations in
+`supabase/migrations/`; the SQLAlchemy models (`apps/api/app/db/`) and Drizzle schema
+(`apps/worker/src/db/`) mirror them, so update both in the same change. See
+`docs/agents/database-access.md`. The v2 column and table contract is in
+`.scratch/directorylaunch-v2/issues/00-shared-contract.md`.

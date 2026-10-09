@@ -32,13 +32,10 @@ export class SelectorMissingError extends WorkerError {
   }
 }
 
-/**
- * A CAPTCHA or bot-detection challenge was present. We STOP. We do not solve it, call a
- * solving service, patch the browser to evade detection, or retry hoping to slip through.
- */
+/** A CAPTCHA or bot-detection challenge was present. The job stops needs_manual. */
 export class ChallengeDetectedError extends WorkerError {
   constructor(public readonly detail: string) {
-    super(`Challenge detected, refusing to proceed: ${detail}`);
+    super(`Challenge not cleared: ${detail}`);
   }
   get outcome(): SubmissionOutcome {
     return { kind: "challenge_detected", detail: this.detail };

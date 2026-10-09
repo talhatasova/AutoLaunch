@@ -18,12 +18,26 @@ function emit(level: Level, message: string, fields: Record<string, unknown> = {
   else console.log(line);
 }
 
-export const log = {
-  debug: (m: string, f?: Record<string, unknown>) => emit("debug", m, f),
-  info: (m: string, f?: Record<string, unknown>) => emit("info", m, f),
-  warn: (m: string, f?: Record<string, unknown>) => emit("warn", m, f),
-  error: (m: string, f?: Record<string, unknown>) => emit("error", m, f),
+export type Logger = {
+  [L in Level]: (message: string, fields?: Record<string, unknown>) => void;
+} & {
+  /** Binds fields (job_id, submission_id, directory, request_id) to every later line. */
+  child(fields: Record<string, unknown>): Logger;
 };
+
+/**
+ * Never pass secrets here: no tokens, passwords, decrypted credentials, DATABASE_URL,
+ * verification links, or page HTML. Log hosts, kinds, counts, and costs instead.
+ */
+function make(bound: Record<string, unknown>): Logger {
+  const at = (level: Level) => (m: string, f?: Record<string, unknown>) => emit(level, m, { ...bound, ...f });
+  return {
+    debug: at("debug"), info: at("info"), warn: at("warn"), error: at("error"),
+    child: (fields) => make({ ...bound, ...fields }),
+  };
+}
+
+export const log = make({});
 
 /** Errors are values here - never `String(e)` a stack away. */
 export function describeError(e: unknown): { name: string; message: string; stack?: string } {

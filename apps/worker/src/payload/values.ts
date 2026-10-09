@@ -31,6 +31,10 @@ const TOP_LEVEL_KEYS = [
   "screenshot_url",
   "contact_email",
   "founder_name",
+  // v2 snapshot fields; absent on v1 payloads, which resolve to "".
+  "public_contact_email",
+  "launch_post",
+  "long_description",
 ] as const;
 
 const PROFILE_KEYS = [
@@ -67,5 +71,5 @@ export function resolvePayloadValue(payload: SubmissionPayload, key: string): Va
     return { ok: false, reason: `unknown payload key "${key}"` };
   }
 
-  return { ok: true, value: stringify(payload[key as (typeof TOP_LEVEL_KEYS)[number]]) };
+  return { ok: true, value: stringify((payload as Record<string, unknown>)[key]) };
 }

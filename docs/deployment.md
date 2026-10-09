@@ -4,19 +4,20 @@ The Supabase schema is migrated and the 23-directory catalog is seeded. The prod
 
 ## Current preview
 
-Railway `dev` runs the [web preview](https://web-dev-f23b.up.railway.app) and [API](https://api-dev-b714.up.railway.app/health) alongside a healthy Playwright worker. The temporary web host serves both landing and app paths; the production host split still uses `xxx.com` and `app.xxx.com` placeholders. The production worker is also healthy, but no directory is certified or eligible for a send. Email and Google Auth are enabled; Supabase's Site URL and redirect allow list still need to be verified for the Railway preview.
+Railway `dev` runs the [web preview](https://web-dev-f23b.up.railway.app) and [API](https://api-dev-b714.up.railway.app/health) alongside a healthy Playwright worker. The temporary web host serves only app paths now that the landing page lives in the marketing service; the production host split still uses `xxx.com` and `app.xxx.com` placeholders. The production worker is also healthy, but no directory is certified or eligible for a send. Email and Google Auth are enabled; Supabase's Site URL and redirect allow list still need to be verified for the Railway preview.
 
 ## Services
 
-Create three Railway services from the repository root, each with its own `RAILWAY_DOCKERFILE_PATH`:
+Create four Railway services from the repository root, each with its own `RAILWAY_DOCKERFILE_PATH`:
 
 | Service | Dockerfile | Public domain |
 | --- | --- | --- |
-| Web | `apps/web/Dockerfile` | `xxx.com`, `app.xxx.com` |
+| Marketing | `apps/marketing/Dockerfile` (static export served by Caddy on `$PORT`; build arg `NEXT_PUBLIC_APP_URL`) | `xxx.com` |
+| Web | `apps/web/Dockerfile` | `app.xxx.com` |
 | API | `apps/api/Dockerfile` | A public HTTPS API host for browser requests |
 | Worker | `apps/worker/Dockerfile` | None |
 
-Set `NEXT_PUBLIC_MARKETING_URL=https://xxx.com`, `NEXT_PUBLIC_APP_URL=https://app.xxx.com`, and `NEXT_PUBLIC_API_URL` to the API's public HTTPS URL on the web service. Set `API_INTERNAL_URL` to the API private Railway URL for server rendering. Set `WEB_INTERNAL_URL` to the web private Railway URL on the API service. Share a long random `INTERNAL_VERIFY_KEY` between web and API. Give `SUPABASE_SERVICE_ROLE_KEY` only to API and worker. Both web and API need the public Supabase URL and publishable key under their respective variable names in `.env.example`. Set API `APP_ORIGIN=https://app.xxx.com`.
+Set `NEXT_PUBLIC_MARKETING_URL=https://xxx.com`, `NEXT_PUBLIC_APP_URL=https://app.xxx.com`, and `NEXT_PUBLIC_API_URL` to the API's public HTTPS URL on the web service. Set `API_INTERNAL_URL` to the API private Railway URL for server rendering. Give `SUPABASE_SERVICE_ROLE_KEY` only to API and worker. Both web and API need the public Supabase URL and publishable key under their respective variable names in `.env.example`. Set API `APP_ORIGIN=https://app.xxx.com`.
 
 `NEXT_PUBLIC_*` values are compiled into the web bundle. Configure them before the Docker build and rebuild when they change. Keep Railway skipped builds disabled for the web service unless runtime configuration replaces these values.
 

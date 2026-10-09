@@ -1,22 +1,59 @@
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
 import { chromium } from "playwright";
-import type { Browser, BrowserContext, Page } from "playwright";
+import type { Browser, BrowserContext, BrowserContextOptions, Page } from "playwright";
 import { CHALLENGE_WINDOW_GLOBALS } from "../drivers/challenge";
 import type { DomSnapshot } from "../drivers/challenge";
 import type { BrowserPool, PageLike } from "../drivers/types";
 import { log } from "../logger";
+import { isPublicAddress } from "./safe-fetch";
 
 /**
  * Playwright adapter. Thin on purpose: no policy lives here, only translation.
  *
  * NOTHING IN THIS FILE EVADES BOT DETECTION. There is no stealth plugin, no navigator
  * patching, no fingerprint spoofing, no proxy rotation. We announce ourselves with an
- * honest User-Agent carrying a contact URL and we accept being turned away. If a site
- * challenges us, the driver reports it and stops - see drivers/challenge.ts.
+ * honest User-Agent carrying a contact URL. A detected challenge stops the job
+ * (needs_manual) - see drivers/challenge.ts.
  */
 export interface BrowserOptions {
   userAgent: string;
   headless: boolean;
   navigationTimeoutMs: number;
+}
+
+/**
+ * Network guard for every context: pages are untrusted, so any request (including redirects
+ * and subresources) to a non-public address is aborted. Lookups are cached for 30s per host.
+ * ponytail: DNS-rebinding window between this lookup and Chromium's connect remains; pin via
+ * a proxy if directories ever become adversarial.
+ */
+const hostVerdicts = new Map<string, { ok: boolean; at: number }>();
+async function hostIsPublic(host: string): Promise<boolean> {
+  const cached = hostVerdicts.get(host);
+  if (cached && Date.now() - cached.at < 30_000) return cached.ok;
+  let ok = false;
+  try {
+    const bare = host.replace(/^\[|\]$/g, "");
+    const addrs = isIP(bare) ? [bare] : (await lookup(bare, { all: true, verbatim: true })).map((r) => r.address);
+    ok = addrs.length > 0 && addrs.every(isPublicAddress);
+  } catch { /* unresolvable: abort */ }
+  hostVerdicts.set(host, { ok, at: Date.now() });
+  return ok;
+}
+
+async function guardContext(context: BrowserContext): Promise<void> {
+  await context.route("**/*", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.protocol === "data:" || url.protocol === "blob:") {
+      return route.request().isNavigationRequest() ? route.abort("blockedbyclient") : route.continue();
+    }
+    if ((url.protocol === "http:" || url.protocol === "https:") && (await hostIsPublic(url.hostname))) {
+      return route.continue();
+    }
+    log.warn("blocked browser request", { host: url.hostname, protocol: url.protocol });
+    return route.abort("blockedbyclient");
+  });
 }
 
 export class PlaywrightPool implements BrowserPool {
@@ -33,6 +70,7 @@ export class PlaywrightPool implements BrowserPool {
       // Deliberately plain. Anything beyond an honest UA starts to be evasion.
       extraHTTPHeaders: { "accept-language": "en-US,en;q=0.9" },
     });
+    await guardContext(this.context);
     this.context.setDefaultTimeout(this.opts.navigationTimeoutMs);
     this.context.setDefaultNavigationTimeout(this.opts.navigationTimeoutMs);
     return this.context;
@@ -42,6 +80,24 @@ export class PlaywrightPool implements BrowserPool {
     const context = await this.ensure();
     const page = await context.newPage();
     return new PlaywrightPage(page, this.opts.navigationTimeoutMs);
+  }
+
+  /**
+   * A page in its own context, optionally restored from a saved storageState. Used for
+   * platform-account sessions so cookies never leak into the shared anonymous context.
+   * Closing the page closes the context.
+   */
+  async newIsolatedPage(storageState?: unknown): Promise<SessionPage> {
+    await this.ensure();
+    const context = await this.browser!.newContext({
+      userAgent: this.opts.userAgent,
+      extraHTTPHeaders: { "accept-language": "en-US,en;q=0.9" },
+      ...(storageState ? { storageState: storageState as BrowserContextOptions["storageState"] } : {}),
+    });
+    await guardContext(context);
+    context.setDefaultTimeout(this.opts.navigationTimeoutMs);
+    context.setDefaultNavigationTimeout(this.opts.navigationTimeoutMs);
+    return new PlaywrightPage(await context.newPage(), this.opts.navigationTimeoutMs, context);
   }
 
   async shutdown(): Promise<void> {
@@ -58,11 +114,20 @@ export class PlaywrightPool implements BrowserPool {
   }
 }
 
-class PlaywrightPage implements PageLike {
+export interface SessionPage extends PageLike {
+  storageState(): Promise<unknown>;
+}
+
+class PlaywrightPage implements SessionPage {
   constructor(
     private readonly page: Page,
     private readonly timeoutMs: number,
+    private readonly ownContext: BrowserContext | null = null,
   ) {}
+
+  async storageState(): Promise<unknown> {
+    return await this.page.context().storageState();
+  }
 
   async goto(url: string): Promise<{ status: number | null }> {
     // domcontentloaded, then an explicit network settle: we need the LIVE DOM including
@@ -156,5 +221,6 @@ class PlaywrightPage implements PageLike {
 
   async close(): Promise<void> {
     await this.page.close();
+    await this.ownContext?.close();
   }
 }

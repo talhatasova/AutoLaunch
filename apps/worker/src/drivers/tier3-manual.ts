@@ -25,10 +25,10 @@ export interface ManualHandoff {
     screenshot_url: string | null;
   };
   /**
-   * Identity fields. These are the AUTHENTICATED FOUNDER'S OWN name and email, taken from
-   * their profile - never a generated persona or a disposable inbox.
+   * Identity fields for the founder's own manual paste: their name and public contact email
+   * (never the platform inbox plus-address, which only the worker can read).
    */
-  contact: { founder_name: string; contact_email: string };
+  contact: { founder_name: string; contact_email: string | null };
   company_profile: SubmissionContext["payload"]["company_profile"];
   /** Plain-language explanation of why this one is manual. */
   reason: string;
@@ -53,7 +53,7 @@ export function buildManualHandoff(ctx: SubmissionContext, reason: string): Manu
       logo_url: p.logo_url,
       screenshot_url: p.screenshot_url,
     },
-    contact: { founder_name: p.founder_name, contact_email: p.contact_email },
+    contact: { founder_name: p.founder_name, contact_email: p.public_contact_email ?? p.contact_email },
     company_profile: p.company_profile,
     reason,
   };
@@ -77,8 +77,8 @@ export class Tier3ManualDriver implements Driver {
     });
 
     const why = d.requires_captcha
-      ? `${d.name} is protected by a CAPTCHA or bot-detection challenge. We never solve or ` +
-        `evade those, so this one is yours to submit.`
+      ? `${d.name} is protected by a CAPTCHA or bot-detection challenge that we cannot clear ` +
+        `automatically, so this one is yours to submit.`
       : `${d.name} requires a signed-in account or human review, so it cannot be submitted ` +
         `programmatically.`;
 

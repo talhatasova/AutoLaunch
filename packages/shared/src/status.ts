@@ -17,6 +17,7 @@ export const submissionStatusSchema = z.enum([
   "pending_review",
   "unconfirmed",
   "live",
+  "not_published",
 ]);
 export type SubmissionStatus = z.infer<typeof submissionStatusSchema>;
 
@@ -26,6 +27,7 @@ export const TERMINAL_STATUSES = [
   "failed",
   "needs_manual",
   "live",
+  "not_published",
 ] as const satisfies readonly SubmissionStatus[];
 
 export function isTerminal(status: SubmissionStatus): boolean {

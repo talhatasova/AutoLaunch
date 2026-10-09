@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { consentDecision } from "../drivers/consent";
 import { Tier3ManualDriver, buildManualHandoff } from "../drivers/tier3-manual";
 import { DomainRateLimiter } from "../net/rate-limit";
-import { extractIdentity } from "../payload/build";
 import { loadSeedDirectory, makeContext, recordingReporter } from "./fake-page";
 
 const GRANT = { directory_slug: "the-startup-project", granted_at: "2026-08-24T12:00:00Z" };
@@ -73,7 +72,7 @@ describe("Tier 3 handoff", () => {
     const ph = loadSeedDirectory("product-hunt");
     const outcome = await new Tier3ManualDriver().run(makeContext(ph), recordingReporter());
     expect(outcome.kind).toBe("manual_required");
-    expect(outcome.kind === "manual_required" && outcome.detail).toMatch(/never solve or evade/i);
+    expect(outcome.kind === "manual_required" && outcome.detail).toMatch(/CAPTCHA/i);
     expect(outcome.kind === "manual_required" && outcome.detail).toContain(ph.submission_url);
   });
 
@@ -85,29 +84,6 @@ describe("Tier 3 handoff", () => {
     });
     expect(handoff.listing.title).toBe("Acme Analytics");
     expect(handoff.directory.submission_url).toMatch(/^https:\/\//);
-  });
-});
-
-describe("identity extraction", () => {
-  it("uses the authenticated user's own email and name", () => {
-    const r = extractIdentity({
-      email: "dana@acme.example",
-      user_metadata: { full_name: "Dana Okafor" },
-    });
-    expect(r.ok && r.identity.email).toBe("dana@acme.example");
-    expect(r.ok && r.identity.founder_name).toBe("Dana Okafor");
-  });
-
-  it("asks rather than inventing a name when the profile has none", () => {
-    const r = extractIdentity({ email: "dana@acme.example", user_metadata: {} });
-    expect(r.ok).toBe(false);
-    expect(!r.ok && r.reason).toMatch(/will not make up a name/i);
-  });
-
-  it("asks rather than substituting an address when the account has no email", () => {
-    const r = extractIdentity({ email: null, user_metadata: { full_name: "Dana" } });
-    expect(r.ok).toBe(false);
-    expect(!r.ok && r.reason).toMatch(/will not submit under an address you did not give us/i);
   });
 });
 

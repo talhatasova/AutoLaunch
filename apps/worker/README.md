@@ -1,6 +1,7 @@
 # `apps/worker`
 
-The pg-boss consumer that actually performs submissions. Everything else in
+The job consumer that actually performs submissions. It claims `submission_jobs` rows once
+through `claim_submission_job()` (`FOR UPDATE SKIP LOCKED`) and never reclaims a crashed job. Everything else in
 DirectoryLaunch is a directory *list* until this process runs.
 
 ```bash
@@ -17,7 +18,6 @@ These are code paths with tests, not aspirations in a doc.
 |------|-------|------|
 | Never defeat CAPTCHA or bot detection | `src/drivers/challenge.ts` | `__tests__/challenge.test.ts` |
 | Never tick a terms box without explicit per-directory consent | `src/drivers/consent.ts` | `__tests__/consent.test.ts` |
-| Never fabricate an identity | `src/payload/build.ts` | `__tests__/consent.test.ts` |
 | Never fill a honeypot | `src/drivers/tier2-form.ts` | `__tests__/tier2-driver.test.ts` |
 | Never report an unconfirmed submission as success | `src/drivers/success.ts` | `__tests__/tier2-driver.test.ts` |
 
@@ -68,12 +68,6 @@ The worker reads two things it cannot derive:
 
 ## Operational traps
 
-**`DATABASE_URL` must be session mode (port 5432).** The worker refuses to boot on 6543.
-On Supabase's transaction pooler, pg-boss's prepared statements and advisory locks break and
-the only symptom is jobs that enqueue and never run - no error, no crash. The assertion in
-`src/env.ts` turns a three-hour debug into a three-second one. See
-`docs/adr/0001-job-queue.md`.
-
 **Docker base image tag must match the `playwright` package version.** Both are `1.62.1`
 today. A mismatch fails at runtime, after deploy, with `Executable doesn't exist at
 /ms-playwright/...`.
@@ -91,21 +85,26 @@ client role - status transitions belong here and nowhere else.
 Every state transition writes a `submission_events` row. The dashboard is driven entirely
 off that table via Realtime, so an event we fail to write is a step the user never sees.
 
-Terminal events are treated as critical: if one cannot be written the job throws rather than
-reporting a finished submission nobody can see. Progress events retry, and any that are
-still lost are counted and attached to the terminal event as `dropped_events`, so the
-timeline says so instead of quietly having a hole in it.
+Event writes throw on failure: a claimed job whose events cannot be written stops and is
+left for investigation rather than reporting a finished submission nobody can see.
+
+## Channels
+
+- `directories.recipe` (optional) holds `form` (same shape as `form_schema`, which it
+  overrides), `login` (platform-account login form) and `social` (`bluesky` | `mastodon`
+  with `base_url`). See `src/drivers/recipe.ts`.
+- `needs_platform_account` channels sign in with the `platform_accounts` row (decrypted
+  here only) and save the encrypted browser session after login.
+- Social posts are public at once, so they go straight to `live` with the post URL.
+- `src/live/detector.ts` polls `live_lookup` daily for 30 days after a receipt, then marks
+  `live` or `not_published`.
 
 ## Environment
 
 | Variable | Purpose |
 |----------|---------|
-| `DATABASE_URL` | pg-boss. **Port 5432, never 6543.** |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase REST endpoint |
+| `SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_URL` | Supabase REST endpoint |
 | `SUPABASE_SERVICE_ROLE_KEY` | Bypasses RLS. Worker only. |
+| `TOKEN_ENCRYPTION_KEY` | base64 32-byte AES-GCM key for `platform_accounts`. Missing disables platform channels (logged). |
 | `SCRAPER_USER_AGENT` | Honest UA with a contact URL |
-| `WORKER_CONCURRENCY` | Jobs in flight (default 2) |
-| `RATE_LIMIT_PER_DOMAIN_MS` | Minimum gap between requests to one host (default 5000) |
-| `NAVIGATION_TIMEOUT_MS` | Playwright timeout (default 30000) |
-| `HEADLESS` | `false` to watch a run locally |
 | `DIRECTORY_API_KEY_<SLUG>` | Tier 1 credential, e.g. `DIRECTORY_API_KEY_THE_STARTUP_PROJECT`. Missing key resolves `needs_manual`, not failure. |

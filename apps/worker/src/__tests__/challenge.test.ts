@@ -131,6 +131,6 @@ describe("detectChallenge", () => {
     const finding = detectChallenge(
       emptySnapshot({ url: "https://example.test/s", windowKeys: ["grecaptcha"] }),
     );
-    expect(finding?.detail).toMatch(/do not solve or evade/i);
+    expect(finding?.detail).toMatch(/^Detected /);
   });
 });

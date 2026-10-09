@@ -1,23 +1,17 @@
-import { createClient } from "@supabase/supabase-js";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import * as schema from "./schema";
 
 /**
- * Service-role Supabase client.
- *
- * This key BYPASSES RLS. The worker has to: `submissions` grants no UPDATE to any client
- * role by design, because status transitions after enqueue belong here and nowhere else.
- *
- * SUPABASE_SERVICE_ROLE_KEY must never appear in apps/web, must never be prefixed
- * NEXT_PUBLIC_, and must never reach a browser.
+ * The worker's only database connection: Supabase Postgres over DATABASE_URL (session
+ * pooler or direct, port 5432) as a role that bypasses RLS. `submissions` grants no UPDATE
+ * to client roles by design, so status transitions after enqueue belong here and nowhere else.
+ * The URL carries the database password and must never reach a browser or a log line.
  */
-export function createServiceClient(url: string, serviceRoleKey: string): SupabaseClient {
-  if (/^NEXT_PUBLIC_/.test(serviceRoleKey)) {
-    throw new Error("Refusing to start: service role key looks like a public env var.");
-  }
-  return createClient(url, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: { headers: { "x-client-info": "directorylaunch-worker" } },
-  });
+export function createDb(url: string) {
+  // prepare:false keeps us compatible if the URL is ever switched to the transaction pooler.
+  const client = postgres(url, { max: 4, prepare: false, connection: { application_name: "directorylaunch-worker" } });
+  return { db: drizzle(client, { schema }), close: () => client.end({ timeout: 5 }) };
 }
 
-export type ServiceClient = SupabaseClient;
+export type Db = ReturnType<typeof createDb>["db"];

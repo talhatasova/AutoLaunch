@@ -16,7 +16,7 @@ See [CLAUDE.md](CLAUDE.md) for the project and skill map, [the product contract]
 ## Local setup
 
 1. Install Node 22, pnpm 9, Python 3.12+, and a local or intended Supabase project.
-2. Copy `.env.example` values into service environments. The service role key belongs in the API and worker only; `INTERNAL_VERIFY_KEY` belongs in the API and web service.
+2. Copy `.env.example` values into service environments. The service role key belongs in the API and worker only.
 3. Apply migrations in timestamp order and seed the catalog with `pnpm seed:directories`. Seed entries are research only until certified.
 4. Run `pnpm --filter web dev`, `uvicorn app.main:app --reload` from `apps/api`, and `pnpm --filter worker start` in separate terminals.
 5. Configure Supabase Auth site URL and redirect allow list for the app host. Enable email links and Google. For the `/auth/confirm` token-hash route, use an email template pointing to `/auth/confirm?token_hash={{ .TokenHash }}`; the default confirmation URL can use `/auth/callback`.
