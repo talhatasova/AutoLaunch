@@ -25,3 +25,4 @@ apps/worker/.scratch/
 npm-debug.log*
 *.egg-info/
 .claude/worktrees/
+apps/marketing/out/
