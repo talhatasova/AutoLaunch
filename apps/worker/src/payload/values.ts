@@ -43,6 +43,9 @@ const PROFILE_KEYS = [
   "customer_count",
   "competitors",
   "founded_year",
+  "stage",
+  "monthly_revenue",
+  "team_size",
 ] as const;
 
 function stringify(v: unknown): string {

@@ -3,6 +3,7 @@ import logging
 import time
 from collections import defaultdict, deque
 from datetime import datetime
+from typing import Literal
 from urllib.parse import urlsplit
 from uuid import UUID
 
@@ -32,6 +33,12 @@ def _launch_text_allowed(user_id: UUID) -> bool:
     return True
 
 
+class CompanyProfile(BaseModel):
+    stage: Literal["idea", "building", "launched", "growing"] | None = None
+    monthly_revenue: Literal["pre_revenue", "under_1k", "1k_10k", "10k_plus"] | None = None
+    team_size: Literal["solo", "2_5", "6_20", "21_plus"] | None = None
+
+
 class ProductInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -46,6 +53,7 @@ class ProductInput(BaseModel):
     public_contact_email: str | None = Field(default=None, max_length=320)
     launch_post: str | None = Field(default=None, max_length=300)
     long_description: str | None = Field(default=None, max_length=5000)
+    company_profile: CompanyProfile | None = None
 
     @field_validator("url", "logo_url", "screenshot_url")
     @classmethod

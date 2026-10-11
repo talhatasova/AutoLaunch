@@ -42,6 +42,24 @@
           "required": true
         },
         {
+          "selector": "#stage",
+          "payload_key": "company_profile.stage",
+          "type": "select",
+          "required": true
+        },
+        {
+          "selector": "#mrrRange",
+          "payload_key": "company_profile.monthly_revenue",
+          "type": "select",
+          "required": true
+        },
+        {
+          "selector": "#teamSize",
+          "payload_key": "company_profile.team_size",
+          "type": "select",
+          "required": true
+        },
+        {
           "selector": "#email",
           "payload_key": "contact_email",
           "type": "email",
@@ -86,15 +104,17 @@
     "needs_platform_account": false,
     "needs_email_verification": false,
     "live_lookup": {
-      "kind": "none"
+      "kind": "url_pattern",
+      "template": "https://startupproject.org/startups/"
     },
-    "recipe": null
+    "recipe": null,
+    "obligation": "Link back to your The Startup Project listing from your website; the consent text says the listing is kept only while that link exists."
   },
   {
     "slug": "startup-collections",
     "name": "Startup Collections",
     "url": "https://startupcollections.com",
-    "submission_url": "https://startupcollections.com/submit/",
+    "submission_url": "https://startupcollections.com/submit/#submit",
     "tier": 2,
     "submission_method": "form",
     "requires_captcha": false,
@@ -135,8 +155,8 @@
       ],
       "submit_selector": "form.loader button[type=\"submit\"]",
       "success_signal": {
-        "kind": "text_present",
-        "value": "Thank you"
+        "kind": "selector_present",
+        "value": "form.loader [data-action-message=\"submit_resource\"][data-status=\"success\"]"
       },
       "extra_fields": [
         {
@@ -163,7 +183,8 @@
     "needs_platform_account": false,
     "needs_email_verification": false,
     "live_lookup": {
-      "kind": "none"
+      "kind": "site_search",
+      "template": "https://startupcollections.com/search/{label}/"
     },
     "recipe": null
   },

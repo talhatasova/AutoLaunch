@@ -1,0 +1,14 @@
+{
+  "name": "DirectoryLaunch",
+  "tagline": "Publish your SaaS to launch directories in one click",
+  "description": "DirectoryLaunch submits your product to curated launch directories and social channels with one click, then tracks each one from receipt to live listing.",
+  "url": "https://marketing-dev-c0cf.up.railway.app",
+  "category": "Marketing",
+  "tags": ["launch", "directories", "marketing", "saas"],
+  "logo_url": null,
+  "screenshot_url": null,
+  "contact_email": null,
+  "public_contact_email": "directorylaunch.submit@gmail.com",
+  "founder_name": "Talha Taşova",
+  "company_profile": { "stage": "launched", "monthly_revenue": "pre_revenue", "team_size": "solo" }
+}

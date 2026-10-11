@@ -5,6 +5,7 @@ import type { Browser, BrowserContext, BrowserContextOptions, Page } from "playw
 import { CHALLENGE_WINDOW_GLOBALS } from "../drivers/challenge";
 import type { DomSnapshot } from "../drivers/challenge";
 import type { BrowserPool, PageLike } from "../drivers/types";
+import { ManualRequiredError } from "../errors";
 import { log } from "../logger";
 import { isPublicAddress } from "./safe-fetch";
 
@@ -76,7 +77,7 @@ export class PlaywrightPool implements BrowserPool {
     return this.context;
   }
 
-  async newPage(): Promise<PageLike> {
+  async newPage(): Promise<SessionPage> {
     const context = await this.ensure();
     const page = await context.newPage();
     return new PlaywrightPage(page, this.opts.navigationTimeoutMs);
@@ -116,11 +117,13 @@ export class PlaywrightPool implements BrowserPool {
 
 export interface SessionPage extends PageLike {
   storageState(): Promise<unknown>;
+  /** Raw Playwright page, for operator tooling (certify CLI screenshots). Drivers use PageLike. */
+  readonly page: Page;
 }
 
 class PlaywrightPage implements SessionPage {
   constructor(
-    private readonly page: Page,
+    readonly page: Page,
     private readonly timeoutMs: number,
     private readonly ownContext: BrowserContext | null = null,
   ) {}
@@ -187,14 +190,15 @@ class PlaywrightPage implements SessionPage {
 
   async selectOption(selector: string, value: string): Promise<void> {
     const locator = this.page.locator(selector).first();
-    try {
-      await locator.selectOption({ label: value }, { timeout: 5_000 });
-    } catch {
-      // Label did not match; fall back to value, then to the closest case-insensitive
-      // label. A select whose options do not contain our category is a real mismatch and
-      // is allowed to throw - the driver classifies it rather than picking something.
-      await locator.selectOption(value, { timeout: 5_000 });
+    const options = await locator.evaluate((el) =>
+      Array.from((el as HTMLSelectElement).options).map((o) => ({ value: o.value, label: o.text.trim() })),
+    );
+    const pick = pickOption(options, value);
+    if (!pick) {
+      // No option fits: a category choice is the founder's to make, not ours to guess.
+      throw new ManualRequiredError(`None of the choices at ${selector} fit "${value}", so this one needs you to pick.`);
     }
+    await locator.selectOption({ value: pick.value }, { timeout: 5_000 });
   }
 
   async setChecked(selector: string, checked: boolean): Promise<void> {
@@ -223,4 +227,28 @@ class PlaywrightPage implements SessionPage {
     await this.page.close();
     await this.ownContext?.close();
   }
+}
+
+/**
+ * Picks the <option> for a payload value: exact label/value (case-insensitive), then the
+ * option sharing the most words with the value, then an "Other" option, else null.
+ * ponytail: word-overlap heuristic; add a per-field option map to form_schema if it misfires.
+ */
+export function pickOption(
+  options: Array<{ value: string; label: string }>,
+  wanted: string,
+): { value: string; label: string } | null {
+  const real = options.filter((o) => o.value !== "");
+  const w = wanted.trim().toLowerCase();
+  const exact = real.find((o) => o.label.toLowerCase() === w || o.value.toLowerCase() === w);
+  if (exact) return exact;
+  const words = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length >= 3);
+  const want = new Set(words(wanted));
+  let best: { value: string; label: string } | null = null;
+  let bestScore = 0;
+  for (const o of real) {
+    const score = words(o.label).filter((t) => want.has(t)).length;
+    if (score > bestScore) [best, bestScore] = [o, score];
+  }
+  return best ?? real.find((o) => /^other$/i.test(o.label) || /^other$/i.test(o.value)) ?? null;
 }

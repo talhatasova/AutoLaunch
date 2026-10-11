@@ -1,0 +1,14 @@
+{
+  "name": "beyondELO",
+  "tagline": "European Football ELO Rankings",
+  "description": "Live ELO rankings for European football clubs across the UCL, UEL, and UECL with multiple adjustable ELO systems, player ratings, and historical tables.",
+  "url": "https://beyondelo.com",
+  "category": "Sports / Analytics",
+  "tags": ["football", "elo", "rankings", "sports analytics"],
+  "logo_url": "https://beyondelo.com/assets/brand/icon-512.png",
+  "screenshot_url": "https://beyondelo.com/assets/og/og-default.jpg",
+  "contact_email": null,
+  "public_contact_email": "directorylaunch.submit@gmail.com",
+  "founder_name": "Talha Taşova",
+  "company_profile": { "stage": "launched", "monthly_revenue": "pre_revenue", "team_size": "solo" }
+}

@@ -43,6 +43,7 @@ export type Product = {
   public_contact_email: string | null;
   launch_post: string | null;
   long_description: string | null;
+  company_profile: Record<string, string | null> | null;
 };
 
 export type CatalogDirectory = {

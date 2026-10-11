@@ -11,6 +11,11 @@ type Draft = Omit<Product, "id">;
 const POST_MAX = 300;
 const field = "mt-1 w-full rounded-[2px] border edge-strong bg-transparent px-3 py-2 fg-heading";
 const label = "text-sm font-medium fg-heading";
+const PROFILE: [string, string, [string, string][]][] = [
+  ["stage", "Company stage", [["idea", "Idea"], ["building", "Building"], ["launched", "Launched"], ["growing", "Growing"]]],
+  ["monthly_revenue", "Monthly revenue", [["pre_revenue", "Pre-revenue"], ["under_1k", "Under $1k"], ["1k_10k", "$1k to $10k"], ["10k_plus", "$10k+"]]],
+  ["team_size", "Team size", [["solo", "Solo founder"], ["2_5", "2 to 5"], ["6_20", "6 to 20"], ["21_plus", "21+"]]],
+];
 
 export function ProductForm({ product, defaultEmail, directories, onDone }: {
   product?: Product;
@@ -35,7 +40,7 @@ export function ProductForm({ product, defaultEmail, directories, onDone }: {
       const response = await fetch("/api/scrape", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) });
       if (!response.ok) throw new Error("We could not read that public site. Check the URL, or fill in the details by hand.");
       const d = await response.json();
-      setDraft({ url: d.url, name: d.name, tagline: d.tagline, description: d.description, category: "", contact_name: d.contact_name, logo_url: d.logo_url, screenshot_url: d.screenshot_url, public_contact_email: defaultEmail, launch_post: null, long_description: null });
+      setDraft({ url: d.url, name: d.name, tagline: d.tagline, description: d.description, category: "", contact_name: d.contact_name, logo_url: d.logo_url, screenshot_url: d.screenshot_url, public_contact_email: defaultEmail, launch_post: null, long_description: null, company_profile: null });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not read that site.");
     } finally {
@@ -48,7 +53,7 @@ export function ProductForm({ product, defaultEmail, directories, onDone }: {
     if (!draft) return;
     setBusy("save");
     setError("");
-    const body = { ...draft, logo_url: draft.logo_url || null, screenshot_url: draft.screenshot_url || null, public_contact_email: draft.public_contact_email || null, launch_post: draft.launch_post || null, long_description: draft.long_description || null };
+    const body = { ...draft, logo_url: draft.logo_url || null, screenshot_url: draft.screenshot_url || null, public_contact_email: draft.public_contact_email || null, launch_post: draft.launch_post || null, long_description: draft.long_description || null, company_profile: draft.company_profile && Object.values(draft.company_profile).some(Boolean) ? draft.company_profile : null };
     try {
       const saved = await api<Product>(savedId ? `/products/${savedId}` : "/products", { method: savedId ? "PATCH" : "POST", body });
       setSavedId(saved.id);
@@ -156,6 +161,22 @@ export function ProductForm({ product, defaultEmail, directories, onDone }: {
         <div className="mt-4">
           <label htmlFor="f-long" className={label}>Long description</label>
           <textarea id="f-long" rows={6} maxLength={5000} className={field} value={draft.long_description ?? ""} onChange={(e) => set("long_description", e.target.value)} />
+        </div>
+      </fieldset>
+
+      <fieldset className="mt-8 border-t border-[var(--border-default)] pt-6">
+        <legend className="t-head text-lg fg-heading">Company details <span className="fg-muted text-sm font-normal">(optional)</span></legend>
+        <p className="fg-body mt-1 text-sm">Some directories require these. Channels that need a detail you leave blank wait for you instead of guessing.</p>
+        <div className="mt-3 grid gap-5 sm:grid-cols-3">
+          {PROFILE.map(([key, text, options]) => (
+            <div key={key}>
+              <label htmlFor={`f-${key}`} className={label}>{text}</label>
+              <select id={`f-${key}`} className={field} value={draft.company_profile?.[key] ?? ""} onChange={(e) => set("company_profile", { ...draft.company_profile, [key]: e.target.value || null })}>
+                <option value="">Not set</option>
+                {options.map(([value, name]) => <option key={value} value={value}>{name}</option>)}
+              </select>
+            </div>
+          ))}
         </div>
       </fieldset>
 

@@ -54,6 +54,7 @@ class App(Base):
     public_contact_email: Mapped[str | None]
     launch_post: Mapped[str | None]
     long_description: Mapped[str | None]
+    company_profile: Mapped[dict | None]
 
 
 class Directory(Base):

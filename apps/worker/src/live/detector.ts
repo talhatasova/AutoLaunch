@@ -41,7 +41,8 @@ export async function verifyListing(
   const directoryHost = bareHost(directoryUrl);
   const productHost = bareHost(productUrl);
   if (new URL(listingUrl).protocol !== "https:" || !onHost(listingUrl, directoryHost)) return null;
-  const page = await safeFetch(listingUrl, { userAgent, maxBytes: 1_000_000 });
+  // ponytail: whole-catalog pages (startupproject.org/startups/ is ~1 MB) need headroom.
+  const page = await safeFetch(listingUrl, { userAgent, maxBytes: 4_000_000 });
   if (page.status !== 200 || !onHost(page.url, directoryHost)) return null;
   return links(page.body, page.url).some((l) => onHost(l, productHost)) ? page.url : null;
 }
@@ -51,7 +52,11 @@ export async function findListing(
 ): Promise<string | null> {
   if (lookup.kind === "none" || !lookup.template) return null;
   const domain = bareHost(productUrl);
-  const target = lookup.template.replaceAll("{domain}", encodeURIComponent(domain));
+  const label = domain.split(".")[0]!;
+  // {domain} = beyondelo.com, {label} = beyondelo (for sites whose search matches names only).
+  const target = lookup.template
+    .replaceAll("{domain}", encodeURIComponent(domain))
+    .replaceAll("{label}", encodeURIComponent(label));
   if (lookup.kind === "url_pattern") return await verifyListing(target, directoryUrl, productUrl, userAgent);
 
   // site_search: listing candidates are same-site links from the results page that carry
@@ -59,7 +64,6 @@ export async function findListing(
   const directoryHost = bareHost(directoryUrl);
   if (!onHost(target, directoryHost)) return null;
   const results = await safeFetch(target, { userAgent, maxBytes: 1_000_000 });
-  const label = domain.split(".")[0]!;
   const candidates = [...new Set(links(results.body, results.url)
     .filter((l) => onHost(l, directoryHost) && l.pathname.toLowerCase().includes(label))
     .map((l) => l.toString()))].slice(0, MAX_SEARCH_CANDIDATES);

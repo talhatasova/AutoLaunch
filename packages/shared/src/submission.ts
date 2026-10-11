@@ -26,6 +26,10 @@ export const companyProfileSchema = z.object({
   customer_count: z.string().min(1).nullable().default(null),
   competitors: z.array(z.string()).default([]),
   founded_year: z.number().int().min(1900).max(2100).nullable().default(null),
+  /** Founder-chosen enums some forms ask for; values mirror the API's CompanyProfile. */
+  stage: z.enum(["idea", "building", "launched", "growing"]).nullable().optional(),
+  monthly_revenue: z.enum(["pre_revenue", "under_1k", "1k_10k", "10k_plus"]).nullable().optional(),
+  team_size: z.enum(["solo", "2_5", "6_20", "21_plus"]).nullable().optional(),
 });
 export type CompanyProfile = z.infer<typeof companyProfileSchema>;
 
@@ -46,7 +50,7 @@ export function profileSatisfies(
   if (!profile) return false;
   return required.every((f) => {
     const v = profile[f];
-    return Array.isArray(v) ? v.length > 0 : v !== null && v !== "";
+    return Array.isArray(v) ? v.length > 0 : v != null && v !== "";
   });
 }
 
